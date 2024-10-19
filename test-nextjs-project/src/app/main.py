@@ -1,10 +1,16 @@
 # main.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import random
+import traceback
+import os
 
 app = FastAPI()
+
+# Set this environment variable to True to display tracebacks
+DISPLAY_TRACEBACK_ON_500 = os.environ.get("DISPLAY_TRACEBACK_ON_500", "False").lower() == "true"
 
 class User(BaseModel):
     id: int
@@ -25,6 +31,26 @@ items = [
     Item(id=1, name="Laptop", price=999.99),
     Item(id=2, name="Phone", price=499.99),
 ]
+
+@app.exception_handler(Exception)
+async def debug_exception_handler(request: Request, exc: Exception):
+    if DISPLAY_TRACEBACK_ON_500:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "message": "Internal Server Error",
+                "traceback": "".join(
+                    traceback.format_exception(
+                        etype=type(exc), value=exc, tb=exc.__traceback__
+                    )
+                )
+            }
+        )
+    else:
+        return JSONResponse(
+            status_code=500,
+            content={"message": "Internal Server Error"}
+        )
 
 @app.get("/users", response_model=List[User])
 async def get_users():
@@ -58,6 +84,11 @@ async def update_item(item_id: int, item: Item):
             items[i] = item
             return {"message": "Item updated successfully"}
     raise HTTPException(status_code=404, detail="Item not found")
+
+@app.get("/error")
+async def trigger_error():
+    # This endpoint always raises an exception to test the traceback functionality
+    raise Exception("This is a test exception")
 
 if __name__ == "__main__":
     import uvicorn
