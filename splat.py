@@ -122,32 +122,7 @@ def generate_explanation(error_message, context):
         click.echo("GROQ_API_KEY is not set. Please set it as an environment variable.")
         return "Unable to generate explanation due to missing API key."
 
-    prompt = f"""
-    You are an AI assistant specialized in explaining software errors. Given the following error message and code context, provide a clear, concise explanation of the error and suggest potential fixes. Focus on the most likely cause of the error based on the information provided.
-
-    Error message:
-    {error_message}
-
-    Code context:
-    {context}
-
-    Please provide:
-    1. A brief explanation of the error
-    2. The most likely cause
-    3. A suggested fix or approach to resolve the issue
-    """
-
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "mixtral-8x7b-32768",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7,
-        "max_tokens": 500
-    }
+    #not implemented yet :3 this will NOT WORK 
 
     try:
         response = requests.post(GROQ_API_URL, headers=headers, json=data)
