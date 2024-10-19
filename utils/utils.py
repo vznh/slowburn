@@ -11,6 +11,9 @@ import os
 from typing import List, Set
 import ast
 from networkx import DiGraph
+import subprocess
+import re
+import json
 
 '''
 This function parses through a typical Python error trace stack, and returns a list of all files related.
@@ -124,3 +127,258 @@ def build_dependency_graph(files: List[str] | Set[str]) -> DiGraph:
 
   return graph
 # [END utils.py]
+"""
+runs repopack
+
+@param takes in a file directory
+
+@returns a json of all of the contents within that function
+
+
+"""
+def run_repopack(files):
+
+
+    """Run Repopack on specific files and return the packed content."""
+    try:
+        # Create a temporary directory to store the files
+        temp_dir = 'temp_repopack'
+        os.makedirs(temp_dir, exist_ok=True)
+
+        # Copy the specified files to the temporary directory
+        for file in files:
+            dest_path = os.path.join(temp_dir, os.path.basename(file))
+            with open(file, 'r') as src, open(dest_path, 'w') as dest:
+                dest.write(src.read())
+
+        # Run Repopack on the temporary directory
+        result = subprocess.run(['repopack', temp_dir, '--style', 'json'],
+                                capture_output=True, text=True, check=True)
+
+        # Clean up the temporary directory
+        for file in os.listdir(temp_dir):
+            os.remove(os.path.join(temp_dir, file))
+        os.rmdir(temp_dir)
+
+        # Parse the JSON output
+        packed_content = json.loads(result.stdout)
+
+        return packed_content
+    except subprocess.CalledProcessError as e:
+        print(f"Error running Repopack: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error parsing Repopack output: {e}")
+        return None
+
+# [END utils.py]
+#
+
+'''
+This function uses a command and tries to check what type the file/directory is.
+The idea is that we will have robust solutions specifically for different project types,
+meaning that we need to determine what kind of project/file the user is working with.
+'''
+def detect_framework_or_language(command, directory='.'):
+    # Dictionary to map commands, file presence, or file extensions to frameworks/languages
+    indicators = {
+        'go': {
+            'commands': ['go run'],
+            'files': ['go.mod'],
+            'extensions': ['.go']
+        },
+        'rust': {
+            'commands': ['cargo run'],
+            'files': ['Cargo.toml'],
+            'extensions': ['.rs']
+        },
+        'kotlin': {
+            'commands': ['kotlinc', 'kotlin'],
+            'files': [],
+            'extensions': ['.kt']
+        },
+        'scala': {
+            'commands': ['scala', 'sbt run'],
+            'files': ['build.sbt'],
+            'extensions': ['.scala']
+        },
+        'swift': {
+            'commands': ['swift', 'swiftc'],
+            'files': ['Package.swift'],
+            'extensions': ['.swift']
+        },
+        'r': {
+            'commands': ['Rscript'],
+            'files': [],
+            'extensions': ['.r', '.R']
+        },
+        'perl': {
+            'commands': ['perl'],
+            'files': [],
+            'extensions': ['.pl', '.pm']
+        },
+        'haskell': {
+            'commands': ['ghc', 'runghc'],
+            'files': [],
+            'extensions': ['.hs']
+        },
+        'lua': {
+            'commands': ['lua'],
+            'files': [],
+            'extensions': ['.lua']
+        },
+        'julia': {
+            'commands': ['julia'],
+            'files': [],
+            'extensions': ['.jl']
+        },
+        'c': {
+            'commands': ['gcc'],
+            'files': [],
+            'extensions':['.c','.cpp']
+        },
+        'java': {
+            'commands': ['javac','java'],
+            'files': [],
+            'extensions': ['.java']
+        },
+        'javascript': {
+            'commands': ['node'],
+            'files': [],
+            'extensions': ['.js','.jsx']
+        },
+        'typescript': {
+            'commands': ['node'],
+            'files': [],
+            'extensions': ['.ts','.tsx']
+        },
+        'python': {
+            'commands': ['python', 'python3'],
+            'files': [],
+            'extensions':['.py']
+        },
+        'nextjs': {
+            'commands': ['next', 'npm run dev', 'yarn dev'],
+            'files': ['next.config.js', 'pages'],
+            'extensions': ['.jsx', '.tsx']
+        },
+        'fastapi': {
+            'commands': ['uvicorn', 'python main.py'],
+            'files': ['main.py'],
+            'extensions': ['.py']
+        },
+        'react': {
+            'commands': ['react-scripts start', 'npm start', 'yarn start'],
+            'files': ['src/App.js', 'public/index.html'],
+            'extensions': ['.jsx', '.tsx', '.js','.ts']
+        },
+        'django': {
+            'commands': ['python manage.py runserver', 'django-admin'],
+            'files': ['manage.py', 'settings.py'],
+            'extensions': ['.py']
+        },
+        'flask': {
+            'commands': ['flask run', 'python app.py'],
+            'files': ['app.py', 'wsgi.py'],
+            'extensions': ['.py']
+        },
+        'vue': {
+            'commands': ['vue-cli-service serve', 'npm run serve'],
+            'files': ['src/main.js', 'public/index.html'],
+            'extensions': ['.vue']
+        },
+        'angular': {
+            'commands': ['ng serve', 'npm start'],
+            'files': ['angular.json', 'src/main.ts'],
+            'extensions': ['.ts']
+        },
+        'express': {
+            'commands': ['node server.js', 'npm start'],
+            'files': ['server.js', 'app.js'],
+            'extensions': ['.js']
+        },
+        'spring-boot': {
+            'commands': ['./mvnw spring-boot:run', 'java -jar'],
+            'files': ['pom.xml', 'src/main/java'],
+            'extensions': ['.java']
+        },
+        'ruby-on-rails': {
+            'commands': ['rails server', 'rails s'],
+            'files': ['config/routes.rb', 'app/controllers'],
+            'extensions': ['.rb']
+        },
+        'laravel': {
+            'commands': ['php artisan serve'],
+            'files': ['artisan', 'app/Http/Kernel.php'],
+            'extensions': ['.php']
+        },
+        'dotnet': {
+            'commands': ['dotnet run', 'dotnet watch run'],
+            'files': ['Program.cs', '.csproj'],
+            'extensions': ['.cs']
+        },
+    }
+
+    def check_command(cmd):
+        for framework, data in indicators.items():
+            if any(c in cmd for c in data['commands']):
+                return framework
+        return None
+
+    def check_files(dir):
+        for framework, data in indicators.items():
+            if len(data['files']) == 0:
+                return None
+            if all(os.path.exists(os.path.join(dir, file)) for file in data['files']):
+                return framework
+        return None
+
+    def check_file_extension(cmd):
+        file_match = re.search(r'\b[\w-]+\.[a-zA-Z0-9]+\b', cmd)
+        if file_match:
+            file_extension = os.path.splitext(file_match.group())[1]
+            for framework, data in indicators.items():
+                if file_extension in data['extensions']:
+                    return framework
+        return None
+
+    # Check command first
+    framework = check_command(command)
+    if framework:
+        print('command found')
+        return framework
+
+    # Check for characteristic files
+    framework = check_files(command)
+    if framework:
+        print('file found', framework)
+        return framework
+
+    # Check file extension in the command
+    framework = check_file_extension(command)
+    if framework:
+        print('file extension found')
+        return framework
+
+    # Check package.json for more clues
+    full_dir = './' + command
+    package_json_path = os.path.join(full_dir, 'package.json')
+    if os.path.exists(package_json_path):
+        with open(package_json_path, 'r') as f:
+            package_data = json.load(f)
+            dependencies = package_data.get('dependencies', {})
+            dev_dependencies = package_data.get('devDependencies', {})
+            all_dependencies = {**dependencies, **dev_dependencies}
+
+            if 'next' in all_dependencies:
+                return 'nextjs'
+            elif 'react' in all_dependencies:
+                return 'react'
+            elif 'vue' in all_dependencies:
+                return 'vue'
+            elif '@angular/core' in all_dependencies:
+                return 'angular'
+            elif 'express' in all_dependencies:
+                return 'express'
+
+    return 'unknown'
