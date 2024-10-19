@@ -4,3 +4,7 @@ repopack
 setuptools
 virtualenv
 networkx
+groq
+fastapi
+uvicorn
+dotenv
