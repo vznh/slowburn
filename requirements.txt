@@ -3,3 +3,6 @@ uagents
 repopack
 setuptools
 virtualenv
+groq
+fastapi 
+uvicorn
