@@ -14,6 +14,7 @@ from networkx import DiGraph
 import subprocess
 import re
 import json
+from typing import List, Set, Union
 
 '''
 This function parses through a typical Python error trace stack, and returns a list of all files related.
@@ -70,19 +71,28 @@ This function runs through a source file, and grabs all files linked by any Nth 
 @returns: all files related to the parameter file to any Nth degree in type Set[str]
 '''
 def get_related_details(file_path: str) -> Set[str]:
-  with open(file_path, 'r') as file:
-    tree = ast.parse(file.read(), filename=file_path)
+    imports = set()
 
-  imports = set()
-  for node in ast.walk(tree):
-    if isinstance(node, ast.Import):
-      for alias in node.names:
-        imports.add(alias.name)
-    elif isinstance(node, ast.ImportFrom):
-      if node.module:
-        imports.add(node.module)
+    try:
+        with open(file_path, 'r') as file:
+            tree = ast.parse(file.read(), filename=file_path)
 
-  return imports
+        # Walk through the AST and collect import statements
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imports.add(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    imports.add(node.module)
+
+    except (SyntaxError, IOError) as e:
+        # If there's an error, the file is still added but imports are skipped
+        print(f"Error parsing file {file_path}: {e}")
+        # Optionally, you can log this to a file or simply pass if you don't want to print errors
+
+    # Ensure the file is still added (even if it couldn't be parsed)
+    return imports
 
 '''
 This helper function resolves an import name to an absolute file path.
@@ -113,17 +123,19 @@ file, and directed edges represent import relationships between files.
 @returns: A directed graph (DiGraph) representing the dependencies among the files.
 @note: This should only be used if the -r flag is raised.
 '''
-def build_dependency_graph(files: List[str] | Set[str]) -> DiGraph:
+def build_dependency_graph(files: Union[List[str], Set[str]]) -> DiGraph:
   graph = DiGraph()
   for file in files:
-    if file not in graph:
-      graph.add_node(file)
+    graph.add_node(file)  # No need to check if it already exists
 
     imports = get_related_details(file)
     for imp in imports:
-      imp_file = resolve_import(imp, file)
-      if imp_file and imp_file in files:
-        graph.add_edge(file, imp_file)
+        imp_file = resolve_import(imp, file)
+        # Ensure the import resolves to an actual file and exists in the set of files
+        if imp_file and os.path.exists(imp_file) and imp_file in files:
+            graph.add_edge(file, imp_file)
+
+    return graph
 
   return graph
 # [END utils.py]
@@ -345,7 +357,7 @@ def detect_framework_or_language(command, directory='.'):
     # Check command first
     framework = check_command(command)
     if framework:
-        print('command found')
+        print('command found', framework)
         return framework
 
     # Check for characteristic files
@@ -382,3 +394,14 @@ def detect_framework_or_language(command, directory='.'):
                 return 'express'
 
     return 'unknown'
+
+'''
+Function to extract the filename
+'''
+def extract_filename_with_extension(command):
+    # Regular expression to match file names with extensions for the supported languages
+    match = re.search(r'(\b\w+\.(go|rs|kt|scala|swift|r|pl|lua|jl|c|java|ts|py)\b)', command, re.IGNORECASE)
+    if match:
+        # Return the full file name with its extension
+        return match.group(1)
+    return None

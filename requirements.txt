@@ -7,4 +7,4 @@ networkx
 groq
 fastapi
 uvicorn
-dotenv
+python-dotenv
