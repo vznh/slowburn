@@ -1,8 +1,10 @@
 import os
 import click
 from handlers import fastapi_handlers
+import errortrace
+import click
 
-@click.group()
+
 def cli():
    """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
    pass
@@ -40,6 +42,21 @@ def handle_fastapi_project(project_dir):
 
     click.echo("Errors found. Analyzing...")
     fastapi_handlers.process_error(error_message)
+    """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
+    pass
+    
+@click.command()
+@click.argument('command')
+@click.option('-f','--file', is_flag=True,help='Load the current file and dependent files into LLM')
+@click.option('-r','--repo', is_flag=True, help="Load the entire repository into the LLM")
+def cli(command, file, repo):
+    """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
+    if file:
+        print("bello")
+    elif repo:
+        print("baibai")
+    else:
+        errortrace.splat_find(command)
 
 if __name__ == '__main__':
     print("DEBUG: Starting SPLAT CLI")
