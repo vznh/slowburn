@@ -1,5 +1,6 @@
 import os
 import click
+import errortrace
 from handlers import fastapi_handlers
 
 @click.group()
