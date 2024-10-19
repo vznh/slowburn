@@ -1,5 +1,0 @@
-click
-uagents
-repopack
-setuptools
-virtualenv
