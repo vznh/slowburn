@@ -133,7 +133,7 @@ def generate_explanation(error_message, context):
 
 @click.group()
 def cli():
-    """SPLAT CLI tool for finding and analyzing bugs in Next.js projects."""
+   """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
     pass
 
 @cli.command()
