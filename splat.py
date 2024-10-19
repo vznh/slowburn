@@ -5,6 +5,7 @@ from handlers import fastapi_handlers
 import errortrace
 import click
 
+<<<<<<< Updated upstream
 
 def cli():
    """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
@@ -46,6 +47,8 @@ def handle_fastapi_project(project_dir):
     """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
     pass
     
+=======
+>>>>>>> Stashed changes
 @click.command()
 @click.argument('command')
 @click.option('-f','--file', is_flag=True,help='Load the current file and dependent files into LLM')

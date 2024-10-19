@@ -1,5 +1,5 @@
-def hello():
-    print(hello
+from utils.utils import detect_framework_or_language
 
 if __name__ == "__main__":
-    hello()
+    framework = detect_framework_or_language("test/test-react-app")
+    print(framework)
