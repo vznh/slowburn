@@ -4,7 +4,7 @@ import errortrace
 from handlers import fastapi_handlers
 import errortrace
 import click
-from process.process import groq_process
+from process.process import process
 
 from utils.utils import build_dependency_graph, detect_framework_or_language, extract_filename_with_extension, get_related_details
 
@@ -74,7 +74,7 @@ def cli(command, related, is_global):
     else:
         error_trace = errortrace.splat_find(command)
         if error_trace:
-            llm_response = groq_process(command, error_trace)
+            llm_response = process(command, error_trace)
             click.echo(llm_response)
         else:
             click.echo("There was an issue running your code")
