@@ -3,3 +3,5 @@ uagents
 repopack
 setuptools
 virtualenv
+fastapi 
+uvicorn

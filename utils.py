@@ -8,11 +8,61 @@ If the user does provide "-r", the graph will contain all files from the error s
 @Usage: "splat <?-g> <?-r>"
 """
 import os
-from typing import List, Set
+from typing import List, Set, Dict
 import ast
 from networkx import DiGraph
+import subprocess
 import json
 import re
+
+'''
+This function parses through a typical Python error trace stack, and returns a list of all files related.
+@note: idx[0] will always be where error was caught
+@note: idx[-1] will always be where error truly originated and or raised
+'''
+def parse_error_stack2(error_info: str) -> List[str]:
+  files: List = []
+  for line in error_info.split('\n'):
+    if line.strip().startswith('File "'):
+      file_path = line.split('"')[1]
+      files.append(file_path)
+
+  return list(set(files)) # NOTE: We should change this to just { return files } if this doesn't work as intended
+
+'''
+this function is changed slightly to help fastAPI lol 
+@note: idx[0] will always be where error was caught
+@note: idx[-1] will always be where error truly originated and or raised
+'''
+
+def parse_error_stack(error_info: str) -> Dict[str, List[str]]:
+    """
+    Parse through a FastAPI error log and return a dictionary of endpoints and their error types.
+    """
+    print("DEBUG: Entering parse_error_stack function")
+    print("DEBUG: Error info received:")
+    print(error_info)
+    
+    endpoints = []
+    error_types = []
+    
+    # Pattern for FastAPI error logs
+    error_pattern = r'INFO:\s+127\.0\.0\.1:\d+ - "GET (/\w+) HTTP/1\.1" (\d+) (.+)'
+    
+    matches = re.findall(error_pattern, error_info)
+    
+    print(f"DEBUG: Found {len(matches)} matches")
+    for match in matches:
+        endpoint, status_code, error_type = match
+        endpoints.append(endpoint)
+        error_types.append(f"{status_code} {error_type}")
+        print(f"DEBUG: Added endpoint: {endpoint}, error: {status_code} {error_type}")
+
+    return {
+        "endpoints": list(dict.fromkeys(endpoints)),
+        "error_types": list(dict.fromkeys(error_types))
+    }
+
 
 '''
 This function is a shorthand redirecting based on if a flag is raised during command call or not.
@@ -110,6 +160,51 @@ def build_dependency_graph(files: List[str] | Set[str]) -> DiGraph:
         graph.add_edge(file, imp_file)
 
   return graph
+
+"""
+runs repopack
+
+@param takes in a file directory
+
+@returns a json of all of the contents within that function
+
+
+"""
+def run_repopack(files):
+  
+
+    """Run Repopack on specific files and return the packed content."""
+    try:
+        # Create a temporary directory to store the files
+        temp_dir = 'temp_repopack'
+        os.makedirs(temp_dir, exist_ok=True)
+
+        # Copy the specified files to the temporary directory
+        for file in files:
+            dest_path = os.path.join(temp_dir, os.path.basename(file))
+            with open(file, 'r') as src, open(dest_path, 'w') as dest:
+                dest.write(src.read())
+
+        # Run Repopack on the temporary directory
+        result = subprocess.run(['repopack', temp_dir, '--style', 'json'], 
+                                capture_output=True, text=True, check=True)
+
+        # Clean up the temporary directory
+        for file in os.listdir(temp_dir):
+            os.remove(os.path.join(temp_dir, file))
+        os.rmdir(temp_dir)
+
+        # Parse the JSON output
+        packed_content = json.loads(result.stdout)
+
+        return packed_content
+    except subprocess.CalledProcessError as e:
+        print(f"Error running Repopack: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error parsing Repopack output: {e}")
+        return None
+
 # [END utils.py]
 #
 
