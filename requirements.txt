@@ -8,3 +8,4 @@ groq
 fastapi
 uvicorn
 dotenv
+prompt_toolkit
