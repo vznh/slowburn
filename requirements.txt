@@ -3,4 +3,3 @@ uagents
 repopack
 setuptools
 virtualenv
-ast
