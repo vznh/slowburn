@@ -1,5 +1,4 @@
 # [START utils.py]
-
 '''
 This file creates a dependency graph that depicts the relationships between files.
 If the user does not provide a flag, the graph will only create itself from the error stack.
@@ -11,7 +10,12 @@ Usage: "splat <?-g> <?-r>"
 import os
 from typing import List, Set
 
-def graph_related_files(error_info: str, global_flag_raised: bool = False):
+'''
+This function is a shorthand redirecting based on if a flag is raised during command call or not.
+Usage: call graph_related_files(pure error string, if flag is raised)
+Returns: void
+'''
+def graph_related_files(error_info: str, global_flag_raised: bool = False) -> None:
   if global_flag_raised:
     return
   else:
@@ -42,6 +46,5 @@ def get_repo_details(repo_path: str = ".") -> List[str]:
   return traced_files
 
 ''''''
-
 
 # [END utils.py]
