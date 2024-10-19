@@ -4,5 +4,6 @@ repopack
 setuptools
 virtualenv
 groq
-fastapi 
+fastapi
 uvicorn
+dotenv
