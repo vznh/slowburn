@@ -1,4 +1,5 @@
 import os
+import errortrace
 import subprocess
 import click
 import time
