@@ -30,7 +30,7 @@ def parse_error_stack2(error_info: str) -> List[str]:
   return list(set(files)) # NOTE: We should change this to just { return files } if this doesn't work as intended
 
 '''
-this function is changed slightly to help fastAPI lol 
+this function is changed slightly to help fastAPI lol
 @note: idx[0] will always be where error was caught
 @note: idx[-1] will always be where error truly originated and or raised
 '''
@@ -42,15 +42,15 @@ def parse_error_stack(error_info: str) -> Dict[str, List[str]]:
     print("DEBUG: Entering parse_error_stack function")
     print("DEBUG: Error info received:")
     print(error_info)
-    
+
     endpoints = []
     error_types = []
-    
+
     # Pattern for FastAPI error logs
     error_pattern = r'INFO:\s+127\.0\.0\.1:\d+ - "GET (/\w+) HTTP/1\.1" (\d+) (.+)'
-    
+
     matches = re.findall(error_pattern, error_info)
-    
+
     print(f"DEBUG: Found {len(matches)} matches")
     for match in matches:
         endpoint, status_code, error_type = match
@@ -171,7 +171,7 @@ runs repopack
 
 """
 def run_repopack(files):
-  
+
 
     """Run Repopack on specific files and return the packed content."""
     try:
@@ -186,7 +186,7 @@ def run_repopack(files):
                 dest.write(src.read())
 
         # Run Repopack on the temporary directory
-        result = subprocess.run(['repopack', temp_dir, '--style', 'json'], 
+        result = subprocess.run(['repopack', temp_dir, '--style', 'json'],
                                 capture_output=True, text=True, check=True)
 
         # Clean up the temporary directory
@@ -216,66 +216,6 @@ meaning that we need to determine what kind of project/file the user is working 
 def detect_framework_or_language(command, directory='.'):
     # Dictionary to map commands, file presence, or file extensions to frameworks/languages
     indicators = {
-        'nextjs': {
-            'commands': ['next', 'npm run dev', 'yarn dev'],
-            'files': ['next.config.js', 'pages'],
-            'extensions': ['.jsx', '.tsx']
-        },
-        'fastapi': {
-            'commands': ['uvicorn', 'python main.py'],
-            'files': ['main.py'],
-            'extensions': ['.py']
-        },
-        'react': {
-            'commands': ['react-scripts start', 'npm start', 'yarn start'],
-            'files': ['src/App.js', 'public/index.html'],
-            'extensions': ['.jsx', '.tsx']
-        },
-        'django': {
-            'commands': ['python manage.py runserver', 'django-admin'],
-            'files': ['manage.py', 'settings.py'],
-            'extensions': ['.py']
-        },
-        'flask': {
-            'commands': ['flask run', 'python app.py'],
-            'files': ['app.py', 'wsgi.py'],
-            'extensions': ['.py']
-        },
-        'vue': {
-            'commands': ['vue-cli-service serve', 'npm run serve'],
-            'files': ['src/main.js', 'public/index.html'],
-            'extensions': ['.vue']
-        },
-        'angular': {
-            'commands': ['ng serve', 'npm start'],
-            'files': ['angular.json', 'src/main.ts'],
-            'extensions': ['.ts']
-        },
-        'express': {
-            'commands': ['node server.js', 'npm start'],
-            'files': ['server.js', 'app.js'],
-            'extensions': ['.js']
-        },
-        'spring-boot': {
-            'commands': ['./mvnw spring-boot:run', 'java -jar'],
-            'files': ['pom.xml', 'src/main/java'],
-            'extensions': ['.java']
-        },
-        'ruby-on-rails': {
-            'commands': ['rails server', 'rails s'],
-            'files': ['config/routes.rb', 'app/controllers'],
-            'extensions': ['.rb']
-        },
-        'laravel': {
-            'commands': ['php artisan serve'],
-            'files': ['artisan', 'app/Http/Kernel.php'],
-            'extensions': ['.php']
-        },
-        'dotnet': {
-            'commands': ['dotnet run', 'dotnet watch run'],
-            'files': ['Program.cs', '.csproj'],
-            'extensions': ['.cs']
-        },
         'go': {
             'commands': ['go run'],
             'files': ['go.mod'],
@@ -325,7 +265,92 @@ def detect_framework_or_language(command, directory='.'):
             'commands': ['julia'],
             'files': [],
             'extensions': ['.jl']
-        }
+        },
+        'c': {
+            'commands': ['gcc'],
+            'files': [],
+            'extensions':['.c','.cpp']
+        },
+        'java': {
+            'commands': ['javac','java'],
+            'files': [],
+            'extensions': ['.java']
+        },
+        'javascript': {
+            'commands': ['node'],
+            'files': [],
+            'extensions': ['.js','.jsx']
+        },
+        'typescript': {
+            'commands': ['node'],
+            'files': [],
+            'extensions': ['.ts','.tsx']
+        },
+        'python': {
+            'commands': ['python', 'python3'],
+            'files': [],
+            'extensions':['.py']
+        },
+        'nextjs': {
+            'commands': ['next', 'npm run dev', 'yarn dev'],
+            'files': ['next.config.js', 'pages'],
+            'extensions': ['.jsx', '.tsx']
+        },
+        'fastapi': {
+            'commands': ['uvicorn', 'python main.py'],
+            'files': ['main.py'],
+            'extensions': ['.py']
+        },
+        'react': {
+            'commands': ['react-scripts start', 'npm start', 'yarn start'],
+            'files': ['src/App.js', 'public/index.html'],
+            'extensions': ['.jsx', '.tsx', '.js','.ts']
+        },
+        'django': {
+            'commands': ['python manage.py runserver', 'django-admin'],
+            'files': ['manage.py', 'settings.py'],
+            'extensions': ['.py']
+        },
+        'flask': {
+            'commands': ['flask run', 'python app.py'],
+            'files': ['app.py', 'wsgi.py'],
+            'extensions': ['.py']
+        },
+        'vue': {
+            'commands': ['vue-cli-service serve', 'npm run serve'],
+            'files': ['src/main.js', 'public/index.html'],
+            'extensions': ['.vue']
+        },
+        'angular': {
+            'commands': ['ng serve', 'npm start'],
+            'files': ['angular.json', 'src/main.ts'],
+            'extensions': ['.ts']
+        },
+        'express': {
+            'commands': ['node server.js', 'npm start'],
+            'files': ['server.js', 'app.js'],
+            'extensions': ['.js']
+        },
+        'spring-boot': {
+            'commands': ['./mvnw spring-boot:run', 'java -jar'],
+            'files': ['pom.xml', 'src/main/java'],
+            'extensions': ['.java']
+        },
+        'ruby-on-rails': {
+            'commands': ['rails server', 'rails s'],
+            'files': ['config/routes.rb', 'app/controllers'],
+            'extensions': ['.rb']
+        },
+        'laravel': {
+            'commands': ['php artisan serve'],
+            'files': ['artisan', 'app/Http/Kernel.php'],
+            'extensions': ['.php']
+        },
+        'dotnet': {
+            'commands': ['dotnet run', 'dotnet watch run'],
+            'files': ['Program.cs', '.csproj'],
+            'extensions': ['.cs']
+        },
     }
 
     def check_command(cmd):
@@ -336,6 +361,8 @@ def detect_framework_or_language(command, directory='.'):
 
     def check_files(dir):
         for framework, data in indicators.items():
+            if len(data['files']) == 0:
+                return None
             if all(os.path.exists(os.path.join(dir, file)) for file in data['files']):
                 return framework
         return None
@@ -352,20 +379,24 @@ def detect_framework_or_language(command, directory='.'):
     # Check command first
     framework = check_command(command)
     if framework:
+        print('command found')
         return framework
 
     # Check for characteristic files
-    framework = check_files(directory)
+    framework = check_files(command)
     if framework:
+        print('file found', framework)
         return framework
 
     # Check file extension in the command
     framework = check_file_extension(command)
     if framework:
+        print('file extension found')
         return framework
 
     # Check package.json for more clues
-    package_json_path = os.path.join(directory, 'package.json')
+    full_dir = './' + command
+    package_json_path = os.path.join(full_dir, 'package.json')
     if os.path.exists(package_json_path):
         with open(package_json_path, 'r') as f:
             package_data = json.load(f)
