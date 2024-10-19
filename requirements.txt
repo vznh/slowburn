@@ -1,4 +1,4 @@
 click
 uagents
 repopack
-
+setuptools
