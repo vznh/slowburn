@@ -10,6 +10,7 @@ If the user does provide "-r", the graph will contain all files from the error s
 import os
 from typing import List, Set
 import ast
+from networkx import DiGraph
 
 '''
 This function is a shorthand redirecting based on if a flag is raised during command call or not.
@@ -66,4 +67,21 @@ def get_related_details(file_path: str) -> Set[str]:
 
   return imports
 
+'''
+This helper function resolves an import name to an absolute file path.
+@Usage: call resolve_import(import_name: str, file_path: str)
+@Returns: absolute path as type str or None if the import cannot be found
+'''
+def resolve_import(import_name: str, file_path: str) -> str | None:
+  dir_path = os.path.dirname(file_path)
+  possible_paths = [
+    os.path.join(dir_path, f"{import_name.replace('.', '/')}.py"),
+    os.path.join(dir_path, import_name, "__init__.py"),
+  ]
+
+  for path in possible_paths:
+    if os.path.exists(path):
+      return os.path.abspath(path)
+
+  return None
 # [END utils.py]
