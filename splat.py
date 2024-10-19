@@ -1,12 +1,12 @@
 import os
 import click
-from utils import parse_error_stack, run_repopack
 from handlers import fastapi_handlers
 
 @click.group()
 def cli():
-    """SPLAT CLI tool for finding and analyzing bugs in Next.js projects."""
-    pass
+   """A CLI that helps you squash bugs and understand what went wrong in your code. Use it as a learning tool or have it complete your code for you!"""
+   pass
+
 @cli.command()
 @click.option('--project-dir', default='.', help='Path to the project directory')
 @click.option('--framework', type=click.Choice(['fastapi', 'django', 'flask']), default='fastapi', help='Web framework used in the project')
