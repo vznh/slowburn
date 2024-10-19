@@ -25,7 +25,7 @@ def graph_related_files(error_info: str, global_flag_raised: bool = False) -> No
 
 '''
 This function runs through the entire repository, and dodges all files that do not start with .py.
-@Usage: call get_repo_details() or with a specific path (most preferably from the stack error trace)
+@Param: repo_path (str) - the path to the repository to analyze (default is current directory)
 @Returns: all traced files of type List[str]
 '''
 def get_repo_details(repo_path: str = ".") -> List[str]:
@@ -49,8 +49,8 @@ def get_repo_details(repo_path: str = ".") -> List[str]:
 
 '''
 This function runs through a source file, and grabs all files linked by any Nth degree connection.
-@Usage: call get_related_details with required parameter: src file path
-@Returns: all files related to parameter file to any Nth degree in type Set[str]
+@Param: file_path (str) - the path of the source file to analyze
+@Returns: all files related to the parameter file to any Nth degree in type Set[str]
 '''
 def get_related_details(file_path: str) -> Set[str]:
   with open(file_path, 'r') as file:
@@ -69,7 +69,8 @@ def get_related_details(file_path: str) -> Set[str]:
 
 '''
 This helper function resolves an import name to an absolute file path.
-@Usage: call resolve_import(import_name: str, file_path: str)
+@Param: import_name (str) - the name of the import to resolve.
+@Param: file_path (str) - the path of the source file from which the import is made.
 @Returns: absolute path as type str or None if the import cannot be found
 '''
 def resolve_import(import_name: str, file_path: str) -> str | None:
@@ -84,4 +85,27 @@ def resolve_import(import_name: str, file_path: str) -> str | None:
       return os.path.abspath(path)
 
   return None
+
+'''
+Build a dependency graph from a list of files.
+
+This function creates a directed graph of type DiGraph where each node represents a
+file, and directed edges represent import relationships between files.
+
+@param files: A list or set of file paths to analyze for dependencies.
+@returns: A directed graph (DiGraph) representing the dependencies among the files.
+'''
+def build_dependency_graph(files: List[str] | Set[str]) -> DiGraph:
+  graph = DiGraph()
+  for file in files:
+    if file not in graph:
+      graph.add_node(file)
+
+    imports = get_related_details(file)
+    for imp in imports:
+      imp_file = resolve_import(imp, file)
+      if imp_file and imp_file in files:
+        graph.add_edge(file, imp_file)
+
+  return graph
 # [END utils.py]
