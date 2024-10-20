@@ -91,7 +91,7 @@ def handle_fastapi_project(command):
     if errors:
         error_message = "\n".join(errors)
         explanation = fastapi_handlers.process_error(error_message)
-        print(explanation)  # This will print only the GROQ API response
+        user_response = terminalstep1(explanation)# This will print only the GROQ API response
     else:
         click.echo("No errors found during the analysis.")
 
