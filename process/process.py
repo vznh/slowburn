@@ -21,12 +21,12 @@ def process(traceback_message: str, original_error_information: str, context: st
       },
       {
         "role": "system", #what is the output displayed
-        "content": """Provide a concise and clear explanation of a given error traceback message in natural language.
+        "content": """Provide a concise and clear kind of nonchalant explanation of a given error traceback message in natural language.
         Describe what the error indicates, how it occurred, and the implications it may have on the code.
         Additionally, pinpoint the exact location in the repository (with specified file name and line number) where the error occurred.
         Finally, give suggestions for how to approach resolving the error, including debugging techniques and best practices, preventative measures or coding standards that could be adopted in the future to avoid similar mistakes.
-        Ensure that the response is structured, informative, and provides actionable advice for the user.
-        You are to output a JSON structure with interface: { 'where': object, 'what': object, 'how': list[object] }; where: Where are the files did we detect the error to be mostly originate in? Where are their absolute paths? what: In the context of the given code, what was the reasoning behind the error? how: What code segment needs to be replaced, and what is the suggested way to fix it? Provide an object that contains a key value pair, where the key will be the error origination, and the value is the suggested code solution with no explanation, just code."""
+        Ensure that the response is structured, informative, and provides actionable advice for the user. There also could be multiple errors.
+        You are to output a JSON object with interface: { 'where': { "repository_path": str, "file_name": str, "line_number": str }, 'what': { "error_type": str, "description": str }, 'how': { "error_origination": line_number, "suggested_code_solution": str } }; where: Where are the files did we detect the error to be mostly originate in? Their paths as an absolute string? what: In the context of the given code, what was the reasoning behind the error? how: What code segment needs to be replaced, and what is the suggested way to fix it? Provide an object that contains a key value pair, where the key will be the error origination, and the value is the suggested code solution with no explanation, just code. """
       },
       {
         "role": "user",
