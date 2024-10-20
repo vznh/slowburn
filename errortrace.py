@@ -3,6 +3,7 @@ import os
 import sys
 import shlex
 import threading
+import json
 
 def run_command(command):
     process = subprocess.Popen(
@@ -18,7 +19,6 @@ def run_command(command):
         for line in pipe:
             line = line.strip()
             lines.append(line)
-            print(line)
 
     stdout, stderr = [], []
 
@@ -40,6 +40,8 @@ def splat_find(command ):
         print(f"Last command was: {command}")
         # Add specific logic to process this command
         stdout, stderr, returncode = run_command(command)
-        print(f"{stdout} {stderr} {returncode}")
+        json_file = {"stdout": stdout, "stderr": stderr, "returncode": returncode}
+        return json.dumps(json_file)
     else:
         print("No last command found.")
+        return None

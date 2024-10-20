@@ -7,5 +7,5 @@ networkx
 groq
 fastapi
 uvicorn
-dotenv
+python-dotenv
 prompt_toolkit
