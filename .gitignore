@@ -6,3 +6,4 @@
 ./test/test-react-app/node_modules
 ./splat.egg-info
 .DS_Store
+__pycache__/*
