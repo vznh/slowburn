@@ -27,34 +27,49 @@ def cli():
 @click.option('-g', '--is_global', is_flag=True, help="Load the entire repository into the LLM using repopack")
 def squash(ctx, command, related, is_global):
     """A CLI that helps you squash bugs and understand what went wrong in your code."""
-    if ctx.invoked_subcommand is None:
-        if not command:
-            click.echo("""
-                /\\_/\\
-                ( o.o )
-                > ^ <
-                Please provide a command or file to analyze.""")
-            return
-        project_type = detect_framework_or_language(command)
+    if not command:
         click.echo("""
             /\\_/\\
-            ( o.o )
-            > ^ <
-            welcome to splat...
-            """)
-        click.echo(f"Detected project type: {project_type}")
+            ( >:< )
+             > - <\
+            Please provide a command or file to analyze.""")
+        return
+    project_type = detect_framework_or_language(command)
+    click.echo("""
+        /\\_/\\
+        ( o.o )
+         > ^ <
+        welcome to splat...
+        """)
+    click.echo(f"Detected project type: {project_type}")
 
-        if project_type == "python" and "main.py" in command:
-            handle_fastapi_project(command)
-        else:
-            error_trace = errortrace.splat_find(command)
-            if error_trace:
-                step1 = process(command, error_trace)
-                user_response = terminalstep1(step1)
-            else:
-                click.echo("There was an issue running your code")
+    if project_type == "python" and "main.py" in command:
+        handle_fastapi_project(command)
+    #****** RELATED  *****
+    elif related:
+        click.echo("""
+            /\\_/\\
+            ( O.O )
+             > o <\
+            grabbing the current file and all related files""")
+    elif is_global:
+        click.echo("""
+            \
+            /\\_/\\
+            ( O.O )
+             > o <\
+            this feature is not implemented yet. exiting now""")
     else:
-        click.echo(f"Invoking subcommand: {ctx.invoked_subcommand}")
+        error_trace = errortrace.splat_find(command)
+        if error_trace:
+            step1 = process(command, error_trace)
+            user_response = terminalstep1(step1)
+        else:
+            click.echo("""
+                /\\_/\\
+                ( >:< )
+                > - <\
+                there was an issue running your code""")
 
 @cli.command()
 def init():
