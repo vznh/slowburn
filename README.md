@@ -7,12 +7,20 @@ splat is a tool that combines your compile/runtime errors and grabs context from
 - **Git Aware**: <ins>splat</ins> takes into consideration your .gitignore files so that we won't use any sensitive info.
 - **Highly Contextual**: You can use <ins>splat</ins> with a `-r` flag, grabbing all nodes to the Nth degree related to all error stack files in order to grab the most related content, delivering a highly accurate, optimized, and contextual debug response.
 
+## Known Bugs
+- <ins>splat</ins> will not conform to any formatting configurations when inserting code
+- <ins>splat</ins> does not do well with running sub-module entrypoints that do not originate in the root directory
+  
 ## Quick Start
-You can use <ins>splat</ins> out of the box:
+You can use <ins>splat</ins> out of the box:  
+
 `splat squash <?-r> <!entrypoint>`.
 
 Example:
-Just like you would enter your app, do so with <ins>splat</ins>.
-`splat squash -r "python3 main.py`
+Just like you would enter your app, do so with <ins>splat</ins>.  
+
+`splat squash "python3 foo.py"`
+
+`splat squash -r "python3 main.py"`
 
 And that's it!
