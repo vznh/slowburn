@@ -1,4 +1,4 @@
-# [START utils.py]
+ # [START utils.py]
 """
 This file creates a dependency graph that depicts the relationships between files. It will read the error stack, and attempt to parse it. Then, using the files mentioned, add everything.
 If the user does not provide a flag, the graph will only create itself from the error stack.
@@ -17,7 +17,7 @@ import re
 import json
 
 # Example run
-def main(error_info: str, flag: str | None = None, project_root: str = '.'):
+def main(error_info: str, flag: str | None = None, project_root: str = './'):
   project_root = os.getcwd()
   error_files = [os.path.join(project_root, file) for file in parse_error_stack(error_info)]
   print("************ERROR FILES*************")
@@ -27,15 +27,12 @@ def main(error_info: str, flag: str | None = None, project_root: str = '.'):
   if isinstance(flag, str):
       print("FLAG CALL: " + flag)
 
-  if flag == '-g':
-    return run_repopack([project_root])
-
   if flag == '-r':
     graph = build_adjacency_list(error_files, project_root)
     all_related_files = get_nth_related_files(error_files, graph)
-    return run_repopack(list(all_related_files))
+    return run_mock_repopack(list(all_related_files))
 
-  return run_repopack(error_files)
+  return run_mock_repopack(error_files)
 
 def is_project_file(file_path: str, project_root: str) -> bool:
   return os.path.commonpath([file_path, project_root]) == project_root
@@ -80,7 +77,7 @@ This function calls repopack to be used with a required parameter.
 @param path: List[str] - A list of file paths to analyze using repopack.
 @returns: Dict - The JSON output from repopack parsed into a Python dictionary.
 '''
-def run_repopack(paths: List[str], style: str = 'json') -> str:
+def run_mock_repopack(paths: List[str], style: str = 'json') -> str:
     """
     A mock function that simulates what repopack might do.
     It returns a string with file paths and their full content.
@@ -94,7 +91,7 @@ def run_repopack(paths: List[str], style: str = 'json') -> str:
     """
     result = []
     for path in paths:
-        if os.path.exists(path):
+        if os.path.exists(path): # Some paths are hallucinative / not real
             with open(path, 'r') as f:
                 content = f.read()
             result.append(f"File: {path}\nContent:\n{content}\n")
@@ -108,17 +105,17 @@ This function runs through a source file and grabs all files linked by any Nth d
 @returns: Set[str] - A set of all files related to the start_files to any Nth degree.
 '''
 def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -> Set[str]:
-  related_files = set(start_files)
-  planned_visit = list(start_files)
+    related_files = set(start_files)
+    planned_visit = list(start_files)
 
-  while (planned_visit):
-    current = planned_visit.pop(0)
-    for neighbor in graph.get(current, []):
-      if neighbor not in related_files:
-        related_files.add(neighbor)
-        planned_visit.append(neighbor)
+    while planned_visit:
+        current = planned_visit.pop(0)
+        for neighbor in graph.get(current, []):
+            if neighbor not in related_files:
+                related_files.add(neighbor)
+                planned_visit.append(neighbor)
 
-  return related_files
+    return related_files
 
 '''
 Builds an adjacency list from a list of files.
@@ -128,18 +125,73 @@ Builds an adjacency list from a list of files.
 '''
 def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[str]]:
     adjacency_list = {}
+
     for file in files:
         if not is_project_file(file, project_root):
             continue
-        with open(file, 'r') as f:
-            tree = ast.parse(f.read())
-        imports = set()
-        adjacency_list[file] = [
-            os.path.join(project_root, imp.replace('.', os.path.sep) + '.py')
-            for imp in imports
-            if os.path.exists(os.path.join(project_root, imp.replace('.', os.path.sep) + '.py'))
-            and is_project_file(os.path.join(project_root, imp.replace('.', os.path.sep) + '.py'), project_root)
-        ]
+
+        imports = set()  # Initialize an empty set to gather imports
+        tree = None      # Initialize tree to None to avoid unbound local error
+
+        try:
+            with open(file, 'r') as f:
+                content = f.read()
+
+                # Try to parse the file content and gather imports
+                try:
+                    tree = ast.parse(content)
+
+                    # Extract imports from the AST
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.Import):
+                            for alias in node.names:
+                                imports.add(alias.name)
+                        elif isinstance(node, ast.ImportFrom):
+                            if node.module:  # Avoid adding NoneType module
+                                imports.add(node.module)
+
+                except SyntaxError as e:
+                    # Log the syntax error
+                    print(f"Syntax error in file {file}: {str(e)}")
+
+        except FileNotFoundError:
+            print(f"File not found: {file}")
+            continue
+        except Exception as e:
+            print(f"An unexpected error occurred while reading the file {file}: {str(e)}")
+            continue
+
+        # After attempting to parse the imports, build the adjacency list entry for the file
+        adjacency_list[file] = []
+
+        # Get the directory of the current file
+        file_dir = os.path.dirname(file)
+
+        for imp in imports:
+            if '.' in imp:  # Handle nested packages
+                # Convert the module name to a file path format
+                module_path = os.path.join(project_root, *imp.split('.')) + '.py'
+            else:
+                # Check if the import is to a module in the same directory (no folder prefix)
+                same_dir_path = os.path.join(file_dir, f"{imp}.py")
+                project_root_path = os.path.join(project_root, f"{imp}.py")
+
+                # Check first if it exists in the same directory
+                if os.path.exists(same_dir_path):
+                    module_path = same_dir_path
+                elif os.path.exists(project_root_path):
+                    module_path = project_root_path
+                else:
+                    print(f"Warning: Imported module {imp} does not exist in the same directory or project root.")
+
+            # Add the module path to the adjacency list if it exists
+            if os.path.exists(module_path):
+                adjacency_list[file].append(module_path)
+
+        # Add a note if we encountered a syntax error and there are unresolved imports
+        if tree is None and imports:
+            adjacency_list[file].append(f"{file} (unresolved imports due to syntax errors)")
+
     return adjacency_list
 
 ################################################## NOT IMPLEMENTED BELOW #####################################################################
@@ -365,7 +417,7 @@ def extract_filename_with_extension(command):
 if __name__ == "__main__":
       # Define the entry point command
       # splat "python3 test.py"
-      entrypoint = ["python3", "t/test.py"]
+      entrypoint = ["python3", "t/a.py"]
 
       # Run the entrypoint and capture the error output
       try:
@@ -384,9 +436,11 @@ if __name__ == "__main__":
           print(error_files)
 
           print("\n************ No Flag (Error Files Only) ************")
-          result = main(error_info, project_root=project_root)
-          print(result)
-
+          Nresult = main(error_info, project_root)
+          print(Nresult)
+          print("\n************ R Flag (All related files) ************")
+          Rresult = main(error_info, "-r", project_root)
+          print(Rresult)
 
       except Exception as e:
           print("An unexpected error occurred:", str(e))
