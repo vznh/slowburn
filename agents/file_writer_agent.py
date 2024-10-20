@@ -36,14 +36,14 @@ async def write_to_file(ctx: Context, sender: str, msg: FileWriteRequest):
         error_message = f"Error writing to file {msg.file_path}: {str(e)}"
         ctx.logger.error(error_message)
         await ctx.send(sender, FileWriteResponse(success=False, message=error_message))
-
+        
 @file_writer.on_message(model=ErrorCorrectionRequest)
 async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrectionRequest):
     try:
         response = msg.response
         file_path = os.path.join(response['where']['repository_path'], response['where']['file_name'])
-        line_number = response['where']['line_number']
-        suggested_code = response['how'][0]['suggested_code_solution']
+        line_number = int(response['where']['line_number'])
+        suggested_code = response['how']['suggested_code_solution']
 
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
@@ -53,11 +53,11 @@ async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrection
 
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(lines)
+            
+            ctx.logger.info(f"Successfully applied correction to file: {file_path}")
+            await ctx.send(sender, FileWriteResponse(success=True, message=f"File {file_path} updated successfully"))
         else:
             raise IndexError("Line number out of range")
-
-        ctx.logger.info(f"Successfully applied correction to file: {file_path}")
-        await ctx.send(sender, FileWriteResponse(success=True, message=f"File {file_path} updated successfully"))
     except Exception as e:
         error_message = f"Error applying correction: {str(e)}"
         ctx.logger.error(error_message)

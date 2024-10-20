@@ -66,8 +66,8 @@ def squash(ctx, command, related, is_global):
             user_response, error_data = terminalstep1(step1)
             if user_response and error_data:
             # User clicked Yes, prompt the agent to change the files
-                await asyncio.run(start_file_writer_agent())
-                await asyncio.run(apply_changes(error_data))
+                asyncio.run(start_file_writer_agent())
+                asyncio.run(apply_changes(error_data))
     elif is_global:
         click.echo("""
             \
@@ -114,12 +114,13 @@ async def apply_changes(error_data):
     try:
         response = requests.post(
             "http://localhost:8000/apply_correction",
-            json=request.json(),
+            json={"response": error_data},
             headers={"Content-Type": "application/json"}
         )
-
+        print(response.status_code, response.text)  # Add this line for debugging
         if response.status_code == 200:
             result = response.json()
+            
             if result.get('success'):
                 click.echo("Changes have been applied successfully.")
             else:
