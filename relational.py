@@ -1,4 +1,4 @@
-# [START utils/main.py]
+# [START relational.py]
 import os
 import subprocess
 from typing import Tuple
@@ -30,4 +30,4 @@ def relational_error_parsing_function(entrypoint, flag: str = "") -> Tuple[str, 
 if __name__ == "__main__":
   relational_error_parsing_function(['python3', 'test.py'], '-r')
 
-# [END utils/main.py]
+# [END relational.py]
