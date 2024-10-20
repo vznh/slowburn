@@ -2,8 +2,6 @@
 from uagents import Agent, Context, Model
 import os
 import json
-import requests
-import importlib
 
 class FileWriteRequest(Model):
     file_path: str
@@ -16,7 +14,11 @@ class FileWriteResponse(Model):
 class ErrorCorrectionRequest(Model):
     response: dict
 
-file_writer = Agent(name="file_writer", seed="file_writer_seed")
+class ErrorCorrectionResponse(Model):
+    success: bool
+    message: str
+
+file_writer = Agent(name="file_writer", seed="file_writer_seed", port=8000, endpoint="http://localhost:8000/submit")
 
 @file_writer.on_event("startup")
 async def startup(ctx: Context):
@@ -57,5 +59,14 @@ async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrection
         ctx.logger.error(error_message)
         await ctx.send(sender, FileWriteResponse(success=False, message=error_message))
 
+@file_writer.on_rest_post("/apply_correction", ErrorCorrectionRequest, ErrorCorrectionResponse)
+async def handle_error_correction(ctx: Context, request: ErrorCorrectionRequest) -> ErrorCorrectionResponse:
+    try:
+        await apply_error_correction(ctx, file_writer.address, request)
+        return ErrorCorrectionResponse(success=True, message="Error correction applied successfully")
+    except Exception as e:
+        return ErrorCorrectionResponse(success=False, message=f"Error applying correction: {str(e)}")
+
 if __name__ == "__main__":
+    print("Starting file writer agent server on http://localhost:8000")
     file_writer.run()

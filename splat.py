@@ -1,6 +1,8 @@
 import json
 import os
 import subprocess
+import sys
+import threading
 import time
 import click
 import requests
@@ -11,8 +13,6 @@ from process.process import process
 from relational import relational_error_parsing_function
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
 import subprocess
-import requests
-import time
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
 from terminalout.terminal import terminalstep1, file_writer_agent
 import shlex
@@ -31,12 +31,13 @@ def cli():
 @click.option('-g', '--is_global', is_flag=True, help="Load the entire repository into the LLM using repopack")
 def squash(ctx, command, related, is_global):
     """A CLI that helps you squash bugs and understand what went wrong in your code."""
+    start_file_writer_agent()
     if not command:
         click.echo("""
             /\\_/\\
            ( >:< )
             > - <\
-            please provide a command or file to analyze""")
+            Please provide a command or file to analyze.""")
         return
     project_type = detect_framework_or_language(command)
     click.echo("""
@@ -60,7 +61,10 @@ def squash(ctx, command, related, is_global):
         if len(traceback) > 0 and len(error_information) > 0 and len(repopack) > 0:
             context = error_information + repopack
             step1 = process(command, traceback, context)
-            user_response = terminalstep1(step1)
+            user_response, error_data = terminalstep1(step1)
+            if user_response and error_data:
+            # User clicked Yes, prompt the agent to change the files
+                asyncio.run(apply_changes(error_data))
     elif is_global:
         click.echo("""
             \
@@ -68,32 +72,26 @@ def squash(ctx, command, related, is_global):
            ( O.O )
             > o <\
             this feature is not implemented yet. exiting now""")
-        return ("""
-            ( o.o )
-            > ^ <
-            welcome to splat...
-            """)
-        click.echo(f"Detected project type: {project_type}")
-
-        if project_type == "python" and "main.py" in command:
-            handle_fastapi_project(command)
+        return
+    
+    click.echo(f"Detected project type: {project_type}")
+    if project_type == "python" and "main.py" in command:
+        handle_fastapi_project(command)
+        if user_response:
+                # User clicked Yes, prompt the agent to change the files
+                asyncio.run(apply_changes(json.loads(step1)))
         else:
-            error_trace = errortrace.splat_find(command)
-            if error_trace:
-                step1 = process(command, error_trace)
-                user_response = terminalstep1(step1)
-                if user_response:
-                    # User clicked Yes, prompt the agent to change the files
-                    asyncio.run(apply_changes(json.loads(step1)))
-            else:
-                click.echo("There was an issue running your code")
+            click.echo("There was an issue running your code")
     else:
         #error_trace = errortrace.splat_find(command)
         traceback, error_information, repopack = relational_error_parsing_function(entrypoint)
         if len(traceback) > 0 and len(error_information) > 0 and len(repopack) > 0:
             context = error_information + repopack
             step1 = process(command, traceback, context)
-            user_response = terminalstep1(step1)
+            user_response, error_data = terminalstep1(step1)
+            if not error_data and user_response:
+                # User clicked Yes, prompt the agent to change the files
+                asyncio.run(apply_changes(error_data))
         else:
             click.echo("""
                 /\\_/\\
@@ -107,48 +105,26 @@ def init():
     click.echo(f'Init command executed')
     return
 
-async def apply_changes(error_response):
-    request = ErrorCorrectionRequest(response=error_response)
-
-    # Create a context for the file writer agent
-    ctx = file_writer._build_context()
-    print(ctx)
-
-    # Create a future to wait for the response
-    response_future = asyncio.Future()
-    print(response_future)
-
-    # Define a callback to handle the response
-    async def response_handler(ctx: Context, sender: str, msg: FileWriteResponse):
-        response_future.set_result(msg)
-
-    # Register the temporary response handler
-    handler_key = file_writer.on_message(FileWriteResponse)(response_handler)
-    print(handler_key)
-
+async def apply_changes(error_data):
+    request = ErrorCorrectionRequest(response=error_data)
+    
     try:
-        # Send the ErrorCorrectionRequest to the agent
-        await ctx.send(file_writer.address, request)
-
-        # Wait for the response
-        response = await asyncio.wait_for(response_future, timeout=10.0)
-        print(response)
-
-        if response.success:
-            click.echo("Changes have been applied successfully.")
+        response = requests.post(
+            "http://localhost:8000/apply_correction",
+            json=request.dict(),
+            headers={"Content-Type": "application/json"}
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('success'):
+                click.echo("Changes have been applied successfully.")
+            else:
+                click.echo(f"Failed to apply changes: {result.get('message', 'Unknown error')}")
         else:
-            click.echo(f"Failed to apply changes: {response.message}")
-    except asyncio.TimeoutError:
-        click.echo("Timeout waiting for response from file writer agent")
-    except Exception as e:
+            click.echo(f"Failed to apply changes: HTTP {response.status_code}")
+    except requests.RequestException as e:
         click.echo(f"Error applying changes: {str(e)}")
-    finally:
-        # Remove the temporary response handler
-        if handler_key in file_writer._signed_message_handlers:
-            file_writer._signed_message_handlers.pop(handler_key)
-        elif handler_key in file_writer._unsigned_message_handlers:
-            file_writer._unsigned_message_handlers.pop(handler_key)
-
 
 def handle_fastapi_project(command):
     click.echo("Analyzing FastAPI project...")
@@ -222,7 +198,29 @@ def check_compilation(command):
         return None  # No compilation error
     except subprocess.CalledProcessError as e:
         return e.stderr
+    
+def start_file_writer_agent():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    agent_path = os.path.join(script_dir, 'agents', 'file_writer_agent.py')
+    
+    def run_agent():
+        subprocess.run([sys.executable, agent_path])
+
+    thread = threading.Thread(target=run_agent)
+    thread.daemon = True
+    thread.start()
+    
+    # Wait for the server to start
+    for _ in range(10):  # Try for 10 seconds
+        try:
+            requests.get("http://localhost:8000")
+            print("File writer agent server is running.")
+            return
+        except requests.ConnectionError:
+            time.sleep(1)
+    
+    print("Failed to start file writer agent server.")
 
 if __name__ == '__main__':
-    asyncio.run(file_writer.setup())
+    start_file_writer_agent()
     cli()

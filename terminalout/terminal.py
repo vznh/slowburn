@@ -4,12 +4,10 @@ from prompt_toolkit import print_formatted_text, HTML
 from prompt_toolkit.shortcuts import prompt, PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
-from agents.file_writer_agent import file_writer, ErrorCorrectionRequest, FileWriteResponse
-
+from agents.file_writer_agent import file_writer, ErrorCorrectionRequest, FileWriteResponse 
 
 # Initialize the file_writer agent
 file_writer_agent = file_writer
-
 
 def terminalstep1(json_object):
     data = json.loads(json_object)
@@ -23,6 +21,7 @@ def terminalstep1(json_object):
 
     current_index = 0  # 0 for YES, 1 for NO
     kb = KeyBindings()
+    options = ['y', 'n']
 
     @kb.add('left')  # Select 'YES'
     def select_yes(event):
@@ -70,5 +69,9 @@ def terminalstep1(json_object):
     update_display(session.app)  # Initial display
     session.prompt("")  # Start prompt
 
-    if current_index == 0:  # If 'y' was selected
-        print_formatted_text(HTML(f"<b><ansigreen>How to fix error:</ansigreen></b> <b>{data['how']['suggested_code_solution']}</b>"))
+    if options[current_index] == 'y':
+        print_formatted_text(HTML("<b><ansigreen>How to fix error:</ansigreen></b>"), data['how'])
+        return True, data
+    else:
+        print_formatted_text(HTML("<b><ansigreen>No changes will be applied.</ansigreen></b>"))
+        return False, None
