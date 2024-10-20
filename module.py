@@ -2,6 +2,7 @@
 """
 # [START module.py]
 import os
+import json
 from typing import List
 from relational import relational_error_parsing_function
 from process.process import process
@@ -19,17 +20,19 @@ def main():
   '''CLI NEEDS TO PROMPT USER HERE + CLI NEEDS TO RETURN BACK FLAG & ENTRYPOINT'''
 
   # Handle relational adjacency list, and feed this to LLM
-  entrypoint: List[str] = ['python3', 'main.py'] # <-- FILL IT OUT HERE
+  entrypoint: List[str] = ['python3', 'test.py'] # <-- FILL IT OUT HERE
   flag: str = "-r"
   traceback, error_info, repopack = relational_error_parsing_function(entrypoint, flag)
 
   # LLM now takes the data (all file context as type str, error message as type str)
-  traceback: str = "" # Temporary
   response: object = process(traceback, error_info, repopack)
 
+  print("Traceback: " + traceback)
+  print("Error info: " + error_info)
+  print("Context: " + repopack)
   '''NOW WE NEED TO SPIT THIS BACK INTO THE CLI'''
 
 # [END module.py]
-#
+
 if __name__ == "__main__":
   main()
