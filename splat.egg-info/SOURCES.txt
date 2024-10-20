@@ -1,0 +1,10 @@
+setup.py
+splat.py
+splat.egg-info/PKG-INFO
+splat.egg-info/SOURCES.txt
+splat.egg-info/dependency_links.txt
+splat.egg-info/entry_points.txt
+splat.egg-info/requires.txt
+splat.egg-info/top_level.txt
+test/test.py
+tests/test_utils.py
