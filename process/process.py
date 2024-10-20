@@ -11,28 +11,27 @@ def process(traceback_message: str, original_error_information: str, context: st
 
   chat_completion = client.chat.completions.create(
     messages=[
-      {
-        "role": "system",
-        "content": f"""Act as a software debugging expert with a strong understanding of error messages and traceback analysis. Remember these steps in detail:
-        Step one, a user executes an erroneous command that give a Python error.
-        Step two, the user uses a "splat" command, which subsequently packages all related files to the source node where the error occurred.
-        Step three, with the packaged files, we graph all files related to the error traceback that occurred at the source node in the respository.
-        Step 4, With the packaged files and now the relations, you will receive a txt file relating to all files in the error trace to process following the next instructions."""
-      },
-      {
-        "role": "system", #what is the output displayed
-        "content": """Provide a concise and clear kind of nonchalant explanation of a given error traceback message in natural language.
-        Describe what the error indicates, how it occurred, and the implications it may have on the code.
-        Additionally, pinpoint the exact location in the repository (with specified file name and line number) where the error occurred.
-        Finally, give suggestions for how to approach resolving the error, including debugging techniques and best practices, preventative measures or coding standards that could be adopted in the future to avoid similar mistakes.
-        Ensure that the response is structured, informative, and provides actionable advice for the user. There also could be multiple errors.
-        You are to output a JSON object with interface: { 'where': { "repository_path": str, "file_name": str, "line_number": str }, 'what': { "error_type": str, "description": str }, 'how': { "error_origination": line_number, "suggested_code_solution": str } }; where: Where are the files did we detect the error to be mostly originate in? Their paths as an absolute string? what: In the context of the given code, what was the reasoning behind the error? how: What code segment needs to be replaced, and what is the suggested way to fix it? Provide an object that contains a key value pair, where the key will be the error origination, and the value is the suggested code solution with no explanation, just code. """
-      },
-      {
-        "role": "user",
-        "content": f"Context: {context}\n\nTraceback message: {traceback_message}\n\nOriginal error message: {original_error_information}"
-      }
-    ],
+        {
+          "role": "system",
+          "content": "You are an expert software debugging assistant specializing in Python error analysis. Your task is to analyze error tracebacks and provide structured, actionable advice. Follow these steps precisely:"
+        },
+        {
+          "role": "system",
+          "content": "1. Analyze the provided error traceback and original error message.\n2. Identify the source of the error within the repository structure.\n3. Explain the error concisely in natural language.\n4. Provide specific, actionable suggestions for resolving the error.\n5. Format your response as a JSON object with the exact structure specified below."
+        },
+        {
+          "role": "system",
+          "content": "Your response MUST be a valid JSON object with this exact structure:\n{\n  \"where\": {\n    \"repository_path\": \"<absolute path to repository>\",\n    \"file_name\": \"<name of file containing error>\",\n    \"line_number\": \"<line number where error occurred>\"\n  },\n  \"what\": {\n    \"error_type\": \"<specific Python error type>\",\n    \"description\": \"<concise explanation of error>\"\n  },\n  \"how\": {\n    \"error_origination\": \"<line number where error originated>\",\n    \"suggested_code_solution\": \"<code snippet to fix the error>\"\n  }\n}"
+        },
+        {
+          "role": "system",
+          "content": "Constraints:\n- Provide ONLY the JSON object as your response. Do not include any other text.\n- Ensure all JSON keys are exactly as specified.\n- The 'suggested_code_solution' should be a valid Python code snippet without explanation.\n- If multiple errors exist, focus on the most critical one that likely caused the others.\n- Do not use placeholders in your response. Provide specific, contextual information based on the given error."
+        },
+        {
+          "role": "user",
+          "content": f"Context: {context}\n\nTraceback message: {traceback_message}\n\nOriginal error message: {original_error_information}"
+        }
+      ],
     model="llama3-70b-8192",
     response_format={"type": "json_object"}
   )
