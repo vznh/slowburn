@@ -4,10 +4,9 @@ import errortrace
 from handlers import fastapi_handlers
 import errortrace
 import click
-from process.process import process, explain
-from terminalout.terminal import terminal
-
-from utils.utils import build_dependency_graph, detect_framework_or_language, extract_filename_with_extension, get_related_details
+from process.process import process
+from terminalout.terminal import terminalstep1
+from utils.utils import detect_framework_or_language, extract_filename_with_extension
 
 '''
 @click.command()
@@ -76,10 +75,9 @@ def cli(command, related, is_global):
         error_trace = errortrace.splat_find(command)
         if error_trace:
             step1 = process(command, error_trace)
-            terminal(step1)
-            if step1:
+            user_response = terminalstep1(step1)
+            if user_response == 0:
                 step2 = explain(step1)
-                print('step 2 reached')
                 click.echo(step2)
         else:
             click.echo("There was an issue running your code")

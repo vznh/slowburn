@@ -23,6 +23,8 @@ def process(repo: list[str], traceback: str):
                 "content": """Provide a detailed and clear explanation of a given error traceback message in natural language.
                 Describe what the error indicates, how it occurred, and the implications it may have on the code.
                 Additionally, pinpoint the exact location in the repository (with specified file name and line number) where the error occurred.
+                Finally, give suggestions for how to approach resolving the error, including debugging techniques and best practices, preventative measures or coding standards that could be adopted in the future to avoid similar mistakes. 
+                Ensure that the response is structured, informative, and provides actionable advice for the user.
                 You are to output a JSON structure with interface: { 'where': { 'line_number': str, 'file_path': str, 'type': str }, 'what': str, 'how': str }"""
             },
             {
@@ -35,7 +37,7 @@ def process(repo: list[str], traceback: str):
     )
     return chat_completion.choices[0].message.content #need a return type for function
 
-def explain(step1response):
+'''def explain(step1response):
     client = Groq(api_key=os.getenv("API"))
     chat_completion = client.chat.completions.create(
         messages=[
@@ -57,7 +59,7 @@ def explain(step1response):
         model="llama3-70b-8192",
         response_format={"type":"json_object"}
     )
-    return chat_completion.choices[0].message.content #need a return type for function
+    return chat_completion.choices[0].message.content #need a return type for function'''
 
 if __name__ == "__main__":
    print(process(["test.py"], """File "/Users/vinh/Documents/calhacks24/test.py", line 2

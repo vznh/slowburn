@@ -6,7 +6,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 
 
-def terminal(json_object):
+def terminalstep1(json_object):
     data = json.loads(json_object)
     #Print where and what
     print_formatted_text(HTML("<b><skyblue>Where error occurs:</skyblue></b>"))
@@ -55,12 +55,11 @@ def terminal(json_object):
     session.prompt("")  # Start prompt
 
     if options[current_index] == 'y':
-        print_formatted_text(HTML("<b><ansigreen>How to fix error:</ansigreen></b>"), data["how"])
-
+        print_formatted_text(HTML("<b><ansigreen>How to fix error:</ansigreen></b>"), data['how'])
 
 
 if __name__ == "__main__":
-    terminal('''{
+    step1('''{
    "where": {
       "line_number": "2",
       "file_path": "/Users/vinh/Documents/calhacks24/test.py",
