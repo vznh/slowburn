@@ -9,5 +9,5 @@ fastapi
 uvicorn
 python-dotenv
 prompt_toolkit
-ai_engine
+uagents-ai-engine
 requests

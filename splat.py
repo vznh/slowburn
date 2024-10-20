@@ -12,6 +12,8 @@ import requests
 import time
 from terminalout.terminal import terminalstep1
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
+from agents.codeagent import agent_start
+import shlex
 
 
 @click.group()
@@ -57,6 +59,8 @@ def squash(ctx, command, related, is_global):
 @cli.command()
 def init():
     click.echo(f'Init command executed')
+    agent_start()
+    return
 
 
 def handle_fastapi_project(command):
@@ -68,9 +72,8 @@ def handle_fastapi_project(command):
     else:
         project_dir = command
         main_file = 'main.py'
-
     server_process = subprocess.Popen(
-        ["python", os.path.join(project_dir, main_file)],
+        shlex.split(command),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         text=True
