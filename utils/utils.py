@@ -353,7 +353,13 @@ def detect_framework_or_language(command, directory='.'):
     return 'unknown'
 
 ################################################## NOT IMPLEMENTED ABOVE #####################################################################
-
+def extract_filename_with_extension(command):
+    # Regular expression to match file names with extensions for the supported languages
+    match = re.search(r'(\b\w+\.(go|rs|kt|scala|swift|r|pl|lua|jl|c|java|ts|py)\b)', command, re.IGNORECASE)
+    if match:
+        # Return the full file name with its extension
+        return match.group(1)
+    return None
 # [END utils.py]
 
 if __name__ == "__main__":
