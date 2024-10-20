@@ -6,7 +6,7 @@ class User:
         self.name = name
         self.age = age
 
-    def greet(self)
+def greet(self):
         return f"Hello, my name is {self.name} and I am {self.age} years old."
 
 def calculate_factorial(n):

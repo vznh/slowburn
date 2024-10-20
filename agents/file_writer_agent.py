@@ -50,11 +50,13 @@ async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrection
             lines = file.readlines()
 
         if 0 < line_number <= len(lines):
-            lines[line_number - 1] = suggested_code
+            stripped_line = lines[line_number - 1].strip()
+            num_whitespace = len(lines[line_number - 1]) - len(stripped_line)
+            lines[line_number - 1] = " " * num_whitespace + suggested_code
 
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(lines)
-            
+            '''
             #after writing, we want to reformat the file
             with open(file_path, 'r') as file:
                 content = file.read()
@@ -62,7 +64,7 @@ async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrection
                 
             with open(file_path, 'w') as file:
                 file.write(formatted_content)
-                
+            '''
             ctx.logger.info(f"Successfully applied correction to file: {file_path}")
             await ctx.send(sender, FileWriteResponse(success=True, message=f"File {file_path} updated successfully"))
         else:

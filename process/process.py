@@ -26,7 +26,7 @@ def process(traceback_message: str, original_error_information: str, context: st
         },
         {
           "role": "system",
-          "content": "Constraints:\n- Provide ONLY the JSON object as your response. Do not include any other text.\n- Ensure all JSON keys are exactly as specified.\n- The 'suggested_code_solution' should be a valid Python code snippet without explanation.\n- If multiple errors exist, focus on the most critical one that likely caused the others.\n- Do not use placeholders in your response. Provide specific, contextual information based on the given error."
+          "content": "Constraints:\n- Provide ONLY the JSON object as your response. Do not include any other text.\n- Ensure all JSON keys are exactly as specified.\n- The 'suggested_code_solution' should be a valid Python code snippet without explanation.\n- If multiple errors exist, focus on the most critical one that likely caused the others.\n- Do not use placeholders in your response. Provide specific, contextual information based on the given error. Only fix the line from the line number given that is causing the error."
         },
         {
           "role": "user",
