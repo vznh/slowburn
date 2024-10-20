@@ -5,7 +5,7 @@ splat is a tool that combines your compile/runtime errors and grabs context from
 - **AI-Optimized**: We use an extremely fast inference model [Groq](https://groq.com/) in order to produce an instant debug error, with still the same amount of accuracy.
 - **Simple to Use**: <ins>splat</ins> can be used out-of-the-box and globally in any project without any configuration.
 - **Git Aware**: <ins>splat</ins> takes into consideration your .gitignore files so that we won't use any sensitive info.
-- **Highly Contextual**: You can use <ins>splat</ins> with a `-r` flag, grabbing all nodes to the Nth degree related to all error stack files in order to grab the most related context, and deliver a highly accurate response.
+- **Highly Contextual**: You can use <ins>splat</ins> with a `-r` flag, grabbing all nodes to the Nth degree related to all error stack files in order to grab the most related content, delivering a highly accurate, optimized, and contextual debug response.
 
 ## Quick Start
 You can use <ins>splat</ins> out of the box:
