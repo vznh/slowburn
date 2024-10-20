@@ -4,7 +4,7 @@ import errortrace
 from handlers import fastapi_handlers
 import errortrace
 import click
-from process.process import process
+from process.process import process, explain
 
 from utils.utils import build_dependency_graph, detect_framework_or_language, extract_filename_with_extension, get_related_details
 
@@ -74,10 +74,15 @@ def cli(command, related, is_global):
     else:
         error_trace = errortrace.splat_find(command)
         if error_trace:
-            llm_response = process(command, error_trace)
-            click.echo(llm_response)
+            step1 = process(command, error_trace)
+            click.echo(step1)
+            if step1:
+                step2 = explain(step1)
+                print('step 2 reached')
+                click.echo(step2)
         else:
             click.echo("There was an issue running your code")
+
 if __name__ == '__main__':
     print("DEBUG: Starting SPLAT CLI")
     cli()

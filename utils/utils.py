@@ -105,12 +105,6 @@ def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[
         with open(file, 'r') as f:
             tree = ast.parse(f.read())
         imports = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                imports.update(alias.name for alias in node.names)
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.add(node.module)
         adjacency_list[file] = [
             os.path.join(project_root, imp.replace('.', os.path.sep) + '.py')
             for imp in imports
@@ -118,7 +112,19 @@ def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[
             and is_project_file(os.path.join(project_root, imp.replace('.', os.path.sep) + '.py'), project_root)
         ]
     return adjacency_list
-################################################## NOT IMPLEMENTED BELOW ######################################################################
+################################################## NOT IMPLEMENTED BELOW #####################################################################
+
+# [END utils.py]
+"""
+runs repopack
+
+@param takes in a file directory
+
+@returns a json of all of the contents within that function
+"""
+
+# [END utils.py]
+#
 '''
 This function uses a command and tries to check what type the file/directory is.
 The idea is that we will have robust solutions specifically for different project types,
