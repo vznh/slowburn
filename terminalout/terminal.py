@@ -63,7 +63,7 @@ def terminalstep1(json_object):
 
         # Clear the line and print the new options with proper formatting
         app.output.write("\r")  # Carries the cursor back to the start of the line
-        print_formatted_text(HTML(f"See suggested change?: {yes_text} / {no_text}   "), end='')  # Ensure no new line is printed
+        print_formatted_text(HTML(f"See suggested change? <gray>...</gray> {yes_text} / {no_text}   "), end='')  # Ensure no new line is printed
 
     # Initial display update
     session = PromptSession(key_bindings=kb)
@@ -71,4 +71,4 @@ def terminalstep1(json_object):
     session.prompt("")  # Start prompt
 
     if current_index == 0:  # If 'y' was selected
-        print_formatted_text(HTML(f"<b><ansigreen>How to fix error:</ansigreen></b> <b>{data['how']['suggested_code_solution']}</b>"))
+        print_formatted_text(HTML(f"⚒️ <b><ansigreen>Our suggestion:</ansigreen></b> <b>{data['how']['suggested_code_solution']}</b>"))
