@@ -1,5 +1,5 @@
-# Splat
-Splat is a tool that combines your compile/runtime errors and grabs context from every crevice to deliver a highly educated debug response. This is perfect for whenever you have an error that needs to be quickly fixed, understood, and prevented for later in the future.
+# splat
+splat is a tool that combines your compile/runtime errors and grabs context from every crevice to deliver a highly educated debug response. This is perfect for whenever you have an error that needs to be quickly fixed, understood, and prevented for later in the future.
 
 ## Features
 - **AI-Optimized**: We use an extremely fast inference model [Groq](https://groq.com/) in order to produce an instant debug error, with still the same amount of accuracy.
