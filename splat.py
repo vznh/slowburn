@@ -76,9 +76,6 @@ def cli(command, related, is_global):
         if error_trace:
             step1 = process(command, error_trace)
             user_response = terminalstep1(step1)
-            if user_response == 0:
-                step2 = explain(step1)
-                click.echo(step2)
         else:
             click.echo("There was an issue running your code")
 
