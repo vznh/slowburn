@@ -1,13 +1,9 @@
 click
-uagents
+uagents==0.16.2
 repopack
 setuptools
 virtualenv
-networkx
 groq
 fastapi
 uvicorn
-python-dotenv
-prompt_toolkit
-uagents-ai-engine
-requests
+dotenv
