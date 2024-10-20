@@ -61,6 +61,10 @@ def process(repo: list[str], traceback: str):
     )
     return chat_completion.choices[0].message.content #need a return type for function'''
 
+def replace(file, step1response, step2response):
+    client = Groq(api_key=os.getenv("API"))
+
+
 if __name__ == "__main__":
    print(process(["test.py"], """File "/Users/vinh/Documents/calhacks24/test.py", line 2
           print(hello
