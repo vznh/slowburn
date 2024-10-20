@@ -1,5 +1,6 @@
 # [START relational.py]
 import os
+import json
 import subprocess
 from typing import Tuple
 from utils.utils import (
@@ -19,7 +20,8 @@ def relational_error_parsing_function(entrypoint, flag: str = "") -> Tuple[str, 
     error_information: str = str(error)
     collected_traceback_files = parse_error_stack(traceback)
     project_root = os.getcwd()
-    collected_traceback_files = [os.path.join(project_root, file) for file in parse_error_stack(error_information)]
+    #collected_traceback_files = [os.path.join(project_root, file) for file in parse_error_stack(error_information)]
+    #print(collected_traceback_files)
     if flag == '-r':
       graph = build_adjacency_list(collected_traceback_files, project_root)
       all_related_files = get_nth_related_files(collected_traceback_files, graph)
