@@ -12,7 +12,6 @@ If the user does provide "-r", the graph will contain all files from the error s
 import os
 from typing import List, Set, Dict, Optional
 import ast
-import subprocess
 import re
 import json
 
@@ -152,7 +151,7 @@ def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[
 
         except SyntaxError as e:
           # Log the syntax error
-          print(f"Syntax error in file {file}: {str(e)}")
+          pass
 
     except FileNotFoundError:
       print(f"File not found: {file}")
