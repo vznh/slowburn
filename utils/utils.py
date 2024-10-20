@@ -10,14 +10,22 @@ If the user does provide "-r", the graph will contain all files from the error s
 @note: entrypoint will **always** be provided; assume there are 3 possibilities only
 """
 import os
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Optional
 import ast
 import subprocess
 import re
 import json
 
+# Example run
 def main(error_info: str, flag: str | None = None, project_root: str = '.'):
-  error_files = parse_error_stack(error_info)
+  project_root = os.getcwd()
+  error_files = [os.path.join(project_root, file) for file in parse_error_stack(error_info)]
+  print("************ERROR FILES*************")
+  print(error_files)
+  print("************ERROR FILES*************")
+
+  if isinstance(flag, str):
+      print("FLAG CALL: " + flag)
 
   if flag == '-g':
     return run_repopack([project_root])
@@ -33,15 +41,26 @@ def is_project_file(file_path: str, project_root: str) -> bool:
   return os.path.commonpath([file_path, project_root]) == project_root
 
 '''
-This function parses through a typical Python error trace stack, and returns a list of all files related.
-@note: idx[0] will always be where error was caught
-@note: idx[-1] will always be where error truly originated and or raised
+This function parses through a typical Python error trace stack and returns a list of all unique file paths found in the trace.
+@param: error_info - a string that will be parsed for errors
+@note: The function uses a regular expression to extract file paths from the error message.
+@note: If a file path doesn't exist on the filesystem, it will not be included in the returned list.
 '''
 def parse_error_stack(error_info: str) -> List[str]:
+    """
+    Parse the error stack trace and return a list of all unique file paths involved.
+
+    Args:
+    error_info (str): The full error stack trace as a string.
+
+    Returns:
+    List[str]: A list of unique file paths involved in the error(s).
+    """
     files = []
     # This regex looks for file paths in various formats, including the command output
     file_pattern = re.compile(r'(?:File "([^"]+)"|\b(\S+\.py)\b)')
 
+    # Process each line of the error_info
     for line in error_info.split('\n'):
         matches = file_pattern.findall(line)
         for match in matches:
@@ -54,32 +73,39 @@ def parse_error_stack(error_info: str) -> List[str]:
                 if os.path.exists(file_path):
                     files.append(file_path)
 
-    return list(set(files))  # Remove duplicates
+    return list(dict.fromkeys(files))
 
 '''
 This function calls repopack to be used with a required parameter.
+@param path: List[str] - A list of file paths to analyze using repopack.
+@returns: Dict - The JSON output from repopack parsed into a Python dictionary.
 '''
-def run_repopack(path: List[str], style: str = 'json') -> Dict:
+def run_repopack(paths: List[str], style: str = 'json') -> str:
     """
-    Run repopack on the specified path and return the results.
+    A mock function that simulates what repopack might do.
+    It returns a string with file paths and their full content.
 
     Args:
-        path (str): The path to analyze with repopack.
-        style (str): The output style for repopack (default is 'json').
-        respect_gitignore (bool): Whether to respect .gitignore files (default is True).
+    paths (List[str]): List of file paths to be processed.
+    style (str): Output style (default is 'json', but not used in this mock version).
 
     Returns:
-        Dict: The parsed JSON output from repopack.
+    str: A string representation of the full file contents.
     """
-    cmd = ['repopack'] + path + ['--style', style, '--respect-gitignore']
+    result = []
+    for path in paths:
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                content = f.read()
+            result.append(f"File: {path}\nContent:\n{content}\n")
 
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    return json.loads(result.stdout)
+    return "\n" + "="*50 + "\n".join(result) + "="*50 + "\n"
 
 '''
-This function runs through a source file, and grabs all files linked by any Nth degree connection.
-@param: file_path (str) - the path of the source file to analyze
-@returns: all files related to the parameter file to any Nth degree in type Set[str]
+This function runs through a source file and grabs all files linked by any Nth degree connection.
+@param start_files: List[str] - The files to start with for finding related files.
+@param graph: Dict[str, List[str]] - The adjacency list representing the relationships between files.
+@returns: Set[str] - A set of all files related to the start_files to any Nth degree.
 '''
 def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -> Set[str]:
   related_files = set(start_files)
@@ -96,6 +122,9 @@ def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -
 
 '''
 Builds an adjacency list from a list of files.
+@param files: List[str] - The list of Python files to analyze for import relationships.
+@param project_root: str - The root directory of the project to ensure valid paths.
+@returns: Dict[str, List[str]] - An adjacency list where each key is a file and its value is a list of imported files.
 '''
 def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[str]]:
     adjacency_list = {}
@@ -112,19 +141,8 @@ def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[
             and is_project_file(os.path.join(project_root, imp.replace('.', os.path.sep) + '.py'), project_root)
         ]
     return adjacency_list
+
 ################################################## NOT IMPLEMENTED BELOW #####################################################################
-
-# [END utils.py]
-"""
-runs repopack
-
-@param takes in a file directory
-
-@returns a json of all of the contents within that function
-"""
-
-# [END utils.py]
-#
 '''
 This function uses a command and tries to check what type the file/directory is.
 The idea is that we will have robust solutions specifically for different project types,
@@ -334,29 +352,35 @@ def detect_framework_or_language(command, directory='.'):
 
     return 'unknown'
 
+################################################## NOT IMPLEMENTED ABOVE #####################################################################
+
 # [END utils.py]
 
 if __name__ == "__main__":
       # Define the entry point command
       # splat "python3 test.py"
-      entrypoint = ["python3", "test.py"]
+      entrypoint = ["python3", "t/test.py"]
 
       # Run the entrypoint and capture the error output
       try:
-          subprocess.run(entrypoint, check=True)
-          print("Ran substance")
+          print()
+          subprocess.run(entrypoint, capture_output=True,check=True, text=True)
       except subprocess.CalledProcessError as e:
           # Capture the error output to simulate the error stack
           error_info = e.stderr if e.stderr else str(e)
-          print("Error information captured from test.py:")
-          print(error_info)
 
           # Parse the error stack to get a list of files
           # Use the parse_error_stack to get files mentioned in the error_info
           error_files = parse_error_stack(error_info)
-          print("************ERROR FILES*************")
+
+          project_root = os.getcwd()
+
           print(error_files)
-          print("************ERROR FILES*************")
+
+          print("\n************ No Flag (Error Files Only) ************")
+          result = main(error_info, project_root=project_root)
+          print(result)
+
 
       except Exception as e:
           print("An unexpected error occurred:", str(e))
