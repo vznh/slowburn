@@ -6,13 +6,13 @@ import requests
 import errortrace
 from handlers import fastapi_handlers
 from process.process import process
+from relational import relational_error_parsing_function
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
 import subprocess
 import requests
 import time
 from terminalout.terminal import terminalstep1
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
-from agents.codeagent import agent_start
 import shlex
 
 
@@ -42,7 +42,7 @@ def squash(ctx, command, related, is_global):
         welcome to splat...
         """)
     click.echo(f"Detected project type: {project_type}")
-
+    entrypoint = command.split(" ")
     if project_type == "python" and "main.py" in command:
         handle_fastapi_project(command)
     #****** RELATED  *****
@@ -52,6 +52,11 @@ def squash(ctx, command, related, is_global):
            ( O.O )
             > o <\
             grabbing the current file and all related files""")
+        traceback, error_information, repopack = relational_error_parsing_function(entrypoint, "-r")
+        if len(traceback) > 0 and len(error_information) > 0 and len(repopack) > 0:
+            context = error_information + repopack
+            step1 = process(command, traceback, context)
+            user_response = terminalstep1(step1)
     elif is_global:
         click.echo("""
             \
@@ -59,22 +64,25 @@ def squash(ctx, command, related, is_global):
            ( O.O )
             > o <\
             this feature is not implemented yet. exiting now""")
+        return
     else:
-        error_trace = errortrace.splat_find(command)
-        if error_trace:
-            step1 = process(command, error_trace)
+        #error_trace = errortrace.splat_find(command)
+        traceback, error_information, repopack = relational_error_parsing_function(entrypoint)
+        if len(traceback) > 0 and len(error_information) > 0 and len(repopack) > 0:
+            context = error_information + repopack
+            step1 = process(command, traceback, context)
             user_response = terminalstep1(step1)
         else:
             click.echo("""
                 /\\_/\\
                ( >:< )
                 > - <\
-                there was an issue running your code""")
+                there was an issue running your code or there were no issues :)""")
+            return
 
 @cli.command()
 def init():
     click.echo(f'Init command executed')
-    agent_start()
     return
 
 
