@@ -7,3 +7,7 @@ groq
 fastapi
 uvicorn
 dotenv
+python-dotenv
+prompt_toolkit
+uagents-ai-engine
+requests
