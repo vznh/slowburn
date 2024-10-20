@@ -90,7 +90,9 @@ def run_mock_repopack(paths: List[str], style: str = 'json') -> str:
   """
   result = []
   for path in paths:
+    print("Query" + path)
     if os.path.exists(path):  # Some paths are hallucinative / not real
+      print("Passed")
       with open(path, 'r') as f:
         content = f.read()
       result.append(f"File: {path}\nContent:\n{content}\n")
@@ -106,15 +108,20 @@ This function runs through a source file and grabs all files linked by any Nth d
 def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -> Set[str]:
   related_files = set(start_files)
   planned_visit = list(start_files)
+  possible_files = set()
 
   while planned_visit:
     current = planned_visit.pop(0)
+    print("Current popped and added: " + current)
+    possible_files.add(current)
+
     for neighbor in graph.get(current, []):
       if neighbor not in related_files:
         related_files.add(neighbor)
         planned_visit.append(neighbor)
 
-  return related_files
+  print("Possible files: " + "".join(possible_files))
+  return possible_files
 
 '''
 Builds an adjacency list from a list of files.
@@ -123,75 +130,66 @@ Builds an adjacency list from a list of files.
 @returns: Dict[str, List[str]] - An adjacency list where each key is a file and its value is a list of imported files.
 '''
 def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[str]]:
-  adjacency_list = {}
+    adjacency_list = {}
+    processed_files = set()
 
-  for file in files:
-    if not is_project_file(file, project_root):
-      continue
+    def process_file(file: str):
+        if file in processed_files or not is_project_file(file, project_root):
+            return
 
-    imports = set()  # Initialize an empty set to gather imports
-    tree = None      # Initialize tree to None to avoid unbound local error
+        processed_files.add(file)
+        imports = set()
+        tree = None
 
-    try:
-      with open(file, 'r') as f:
-        content = f.read()
-
-        # Try to parse the file content and gather imports
         try:
-          tree = ast.parse(content)
+            with open(file, 'r') as f:
+                content = f.read()
+                try:
+                    tree = ast.parse(content)
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.Import):
+                            imports.update(alias.name for alias in node.names)
+                        elif isinstance(node, ast.ImportFrom) and node.module:
+                            imports.add(node.module)
+                except SyntaxError:
+                    print(f"Syntax error in file: {file}")
+        except FileNotFoundError:
+            print(f"File not found: {file}")
+            return
+        except Exception as e:
+            print(f"An unexpected error occurred while reading the file {file}: {str(e)}")
+            return
 
-          # Extract imports from the AST
-          for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-              for alias in node.names:
-                imports.add(alias.name)
-            elif isinstance(node, ast.ImportFrom):
-              if node.module:  # Avoid adding NoneType module
-                imports.add(node.module)
+        adjacency_list[file] = []
+        file_dir = os.path.dirname(file)
 
-        except SyntaxError as e:
-          # Log the syntax error
-          pass
+        for imp in imports:
+            module_paths = []
+            if '.' in imp:
+                module_paths.append(os.path.join(project_root, *imp.split('.')) + '.py')
+            else:
+                module_paths.extend([
+                    os.path.join(file_dir, f"{imp}.py"),
+                    os.path.join(project_root, f"{imp}.py")
+                ])
 
-    except FileNotFoundError:
-      print(f"File not found: {file}")
-      continue
-    except Exception as e:
-      print(f"An unexpected error occurred while reading the file {file}: {str(e)}")
-      continue
+            for module_path in module_paths:
+                if os.path.exists(module_path):
+                    adjacency_list[file].append(module_path)
+                    # Recursively process the imported file
+                    process_file(module_path)
+                    break
+            else:
+                print(f"Warning: Imported module {imp} does not exist in the same directory or project root.")
 
-    # After attempting to parse the imports, build the adjacency list entry for the file
-    adjacency_list[file] = []
+        if tree is None and imports:
+            adjacency_list[file].append(f"{file} (unresolved imports due to syntax errors)")
 
-    # Get the directory of the current file
-    file_dir = os.path.dirname(file)
+    # Start processing with the initial list of files
+    for file in files:
+        process_file(file)
 
-    for imp in imports:
-      if '.' in imp:  # Handle nested packages
-        # Convert the module name to a file path format
-        module_path = os.path.join(project_root, *imp.split('.')) + '.py'
-      else:
-        # Check if the import is to a module in the same directory (no folder prefix)
-        same_dir_path = os.path.join(file_dir, f"{imp}.py")
-        project_root_path = os.path.join(project_root, f"{imp}.py")
-
-        # Check first if it exists in the same directory
-        if os.path.exists(same_dir_path):
-          module_path = same_dir_path
-        elif os.path.exists(project_root_path):
-          module_path = project_root_path
-        else:
-          print(f"Warning: Imported module {imp} does not exist in the same directory or project root.")
-
-      # Add the module path to the adjacency list if it exists
-      if os.path.exists(module_path):
-        adjacency_list[file].append(module_path)
-
-    # Add a note if we encountered a syntax error and there are unresolved imports
-    if tree is None and imports:
-      adjacency_list[file].append(f"{file} (unresolved imports due to syntax errors)")
-
-  return adjacency_list
+    return adjacency_list
 
 ################################################## NOT IMPLEMENTED BELOW #####################################################################
 '''
@@ -411,35 +409,5 @@ def extract_filename_with_extension(command):
     # Return the full file name with its extension
     return match.group(1)
   return None
+
 # [END utils.py]
-
-if __name__ == "__main__":
-  # Define the entry point command
-  # splat "python3 test.py"
-  entrypoint = ["python3", "t/a.py"]
-
-  # Run the entrypoint and capture the error output
-  try:
-    print()
-    subprocess.run(entrypoint, capture_output=True, check=True, text=True)
-  except subprocess.CalledProcessError as e:
-    # Capture the error output to simulate the error stack
-    error_info = e.stderr if e.stderr else str(e)
-
-    # Parse the error stack to get a list of files
-    # Use the parse_error_stack to get files mentioned in the error_info
-    error_files = parse_error_stack(error_info)
-
-    project_root = os.getcwd()
-
-    print(error_files)
-
-    print("\n************ No Flag (Error Files Only) ************")
-    Nresult = main(error_info, project_root)
-    print(Nresult)
-    print("\n************ R Flag (All related files) ************")
-    Rresult = main(error_info, "-r", project_root)
-    print(Rresult)
-
-  except Exception as e:
-    print("An unexpected error occurred:", str(e))
