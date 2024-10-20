@@ -4,6 +4,9 @@ import sys
 import shlex
 import threading
 import json
+import logging
+
+logging.basicConfig(level=logging.ERROR)
 
 def run_command(command):
     process = subprocess.Popen(

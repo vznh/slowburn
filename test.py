@@ -1,5 +1,4 @@
-def main():
-  print("hello"
+from utils.utils import detect_framework_or_language
 
-if __name__ == "__main__":
-  main()
+framework = detect_framework_or_language("python3 ./test/main.py")
+print(framework)

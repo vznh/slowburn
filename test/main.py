@@ -6,6 +6,10 @@ from typing import List, Optional
 import random
 import traceback
 import os
+import logging
+from fastapi.logger import logger as fastapi_logger
+
+fastapi_logger.setLevel(logging.ERROR)
 
 app = FastAPI()
 
