@@ -2,6 +2,7 @@
 from uagents import Agent, Context, Model
 import os
 import json
+import black 
 
 class FileWriteRequest(Model):
     file_path: str
@@ -49,11 +50,19 @@ async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrection
             lines = file.readlines()
 
         if 0 < line_number <= len(lines):
-            lines[line_number - 1] = suggested_code + '\n'
+            lines[line_number - 1] = suggested_code
 
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(lines)
             
+            #after writing, we want to reformat the file
+            with open(file_path, 'r') as file:
+                content = file.read()
+                formatted_content = black.format(content, mode=black.FileMode())
+                
+            with open(file_path, 'w') as file:
+                file.write(formatted_content)
+                
             ctx.logger.info(f"Successfully applied correction to file: {file_path}")
             await ctx.send(sender, FileWriteResponse(success=True, message=f"File {file_path} updated successfully"))
         else:
