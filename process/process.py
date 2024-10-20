@@ -3,6 +3,7 @@ from groq import Groq
 import os
 import json
 from dotenv import load_dotenv
+from terminalout.terminal import terminalstep1
 
 load_dotenv()
 
@@ -37,4 +38,8 @@ def process(traceback_message: str, original_error_information: str, context: st
   )
   return chat_completion.choices[0].message.content
 
-# [END process/process.py]
+if __name__ == "__main__":
+   print(process(["test.py"], """File "/Users/vinh/Documents/calhacks24/test.py", line 2
+          print(hello
+               ^
+      SyntaxError: '(' was never closed"""))

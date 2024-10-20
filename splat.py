@@ -1,8 +1,10 @@
+import json
 import os
 import subprocess
 import time
 import click
 import requests
+from uagents import Context
 import errortrace
 from handlers import fastapi_handlers
 from process.process import process
@@ -11,9 +13,15 @@ from utils.utils import detect_framework_or_language, extract_filename_with_exte
 import subprocess
 import requests
 import time
+<<<<<<< Updated upstream
 from terminalout.terminal import terminalstep1
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
+=======
+from terminalout.terminal import terminalstep1, file_writer_agent
+>>>>>>> Stashed changes
 import shlex
+from agents.file_writer_agent import ErrorCorrectionRequest, file_writer, FileWriteResponse
+import asyncio
 
 
 @click.group()
@@ -30,6 +38,7 @@ def squash(ctx, command, related, is_global):
     if not command:
         click.echo("""
             /\\_/\\
+<<<<<<< Updated upstream
            ( >:< )
             > - <\
             Please provide a command or file to analyze.""")
@@ -65,6 +74,26 @@ def squash(ctx, command, related, is_global):
             > o <\
             this feature is not implemented yet. exiting now""")
         return
+=======
+            ( o.o )
+            > ^ <
+            welcome to splat...
+            """)
+        click.echo(f"Detected project type: {project_type}")
+
+        if project_type == "python" and "main.py" in command:
+            handle_fastapi_project(command)
+        else:
+            error_trace = errortrace.splat_find(command)
+            if error_trace:
+                step1 = process(command, error_trace)
+                user_response = terminalstep1(step1)
+                if user_response:
+                    # User clicked Yes, prompt the agent to change the files
+                    asyncio.run(apply_changes(json.loads(step1)))
+            else:
+                click.echo("There was an issue running your code")
+>>>>>>> Stashed changes
     else:
         #error_trace = errortrace.splat_find(command)
         traceback, error_information, repopack = relational_error_parsing_function(entrypoint)
@@ -84,6 +113,48 @@ def squash(ctx, command, related, is_global):
 def init():
     click.echo(f'Init command executed')
     return
+
+async def apply_changes(error_response):
+    request = ErrorCorrectionRequest(response=error_response)
+    
+    # Create a context for the file writer agent
+    ctx = file_writer._build_context()
+    print(ctx)
+    
+    # Create a future to wait for the response
+    response_future = asyncio.Future()
+    print(response_future)
+    
+    # Define a callback to handle the response
+    async def response_handler(ctx: Context, sender: str, msg: FileWriteResponse):
+        response_future.set_result(msg)
+
+    # Register the temporary response handler
+    handler_key = file_writer.on_message(FileWriteResponse)(response_handler)
+    print(handler_key)
+    
+    try:
+        # Send the ErrorCorrectionRequest to the agent
+        await ctx.send(file_writer.address, request)
+        
+        # Wait for the response
+        response = await asyncio.wait_for(response_future, timeout=10.0)
+        print(response)
+        
+        if response.success:
+            click.echo("Changes have been applied successfully.")
+        else:
+            click.echo(f"Failed to apply changes: {response.message}")
+    except asyncio.TimeoutError:
+        click.echo("Timeout waiting for response from file writer agent")
+    except Exception as e:
+        click.echo(f"Error applying changes: {str(e)}")
+    finally:
+        # Remove the temporary response handler
+        if handler_key in file_writer._signed_message_handlers:
+            file_writer._signed_message_handlers.pop(handler_key)
+        elif handler_key in file_writer._unsigned_message_handlers:
+            file_writer._unsigned_message_handlers.pop(handler_key)
 
 
 def handle_fastapi_project(command):
@@ -125,6 +196,9 @@ def handle_fastapi_project(command):
         error_message = "\n".join(errors)
         explanation = fastapi_handlers.process_error(error_message)
         user_response = terminalstep1(explanation)# This will print only the GROQ API response
+        if user_response:
+            # User clicked Yes, prompt the agent to change the files
+            asyncio.run(apply_changes(json.loads(explanation)))
     else:
         click.echo("No errors found during the analysis.")
 
@@ -157,4 +231,5 @@ def check_compilation(command):
         return e.stderr
 
 if __name__ == '__main__':
+    asyncio.run(file_writer.setup())
     cli()
