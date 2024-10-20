@@ -13,29 +13,55 @@ import time
 from terminalout.terminal import terminalstep1
 from utils.utils import detect_framework_or_language, extract_filename_with_extension
 
-@click.command()
+
+@click.group()
+def cli():
+    pass
+
+@cli.command
 @click.argument('command', required=False)
+@click.pass_context
 @click.option('-r', '--related', is_flag=True, help='Load the file and imported files to load into the LLM')
 @click.option('-g', '--is_global', is_flag=True, help="Load the entire repository into the LLM using repopack")
-def cli(command, related, is_global):
+def squash(ctx, command, related, is_global):
     """A CLI that helps you squash bugs and understand what went wrong in your code."""
-    if not command:
-        click.echo("Please provide a command or file to analyze.")
-        return
+    if ctx.invoked_subcommand is None:
+        if not command:
+            click.echo("""
+                /\\_/\\
+                ( o.o )
+                > ^ <
+                Please provide a command or file to analyze.""")
+            return
+        project_type = detect_framework_or_language(command)
+        click.echo("""
+            /\\_/\\
+            ( o.o )
+            > ^ <
+            welcome to splat...
+            """)
+        click.echo(f"Detected project type: {project_type}")
 
-    project_type = detect_framework_or_language(command)
-    click.echo(f"Detected project type: {project_type}")
-
-    if project_type == 'python':
-        handle_fastapi_project(command)
-    elif project_type in ['javascript', 'typescript', 'java', 'c']:
-        handle_generic_project(command, project_type, related, is_global)
+        if project_type == "python" and "main.py" in command:
+            handle_fastapi_project(command)
+        else:
+            error_trace = errortrace.splat_find(command)
+            if error_trace:
+                step1 = process(command, error_trace)
+                user_response = terminalstep1(step1)
+            else:
+                click.echo("There was an issue running your code")
     else:
-        click.echo(f"Unsupported project type: {project_type}")
+        click.echo(f"Invoking subcommand: {ctx.invoked_subcommand}")
+
+@cli.command()
+def init():
+    click.echo(f'Init command executed')
+
 
 def handle_fastapi_project(command):
     click.echo("Analyzing FastAPI project...")
-    
+
     if os.path.isfile(command):
         project_dir = os.path.dirname(command)
         main_file = os.path.basename(command)
@@ -72,7 +98,7 @@ def handle_fastapi_project(command):
     if errors:
         error_message = "\n".join(errors)
         explanation = fastapi_handlers.process_error(error_message)
-        print(explanation)  # This will print only the GROQ API response
+        user_response = terminalstep1(explanation)# This will print only the GROQ API response
     else:
         click.echo("No errors found during the analysis.")
 
