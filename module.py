@@ -1,4 +1,7 @@
 """
+This implementation is a pipeline that is a readable version of splat, where the pipeline can be easily seen here.
+@note: Splat only currently supports files that can be launched from root directory.
+@note: You are NOT to run this file.
 """
 # [START module.py]
 import os
@@ -20,19 +23,12 @@ def main():
   '''CLI NEEDS TO PROMPT USER HERE + CLI NEEDS TO RETURN BACK FLAG & ENTRYPOINT'''
 
   # Handle relational adjacency list, and feed this to LLM
-  entrypoint: List[str] = ['python3', 'test.py'] # <-- FILL IT OUT HERE
+  entrypoint: List[str] = ['python3', 'foo.py'] # <-- will be filled in by CLI
   flag: str = "-r"
   traceback, error_info, repopack = relational_error_parsing_function(entrypoint, flag)
 
   # LLM now takes the data (all file context as type str, error message as type str)
   response: object = process(traceback, error_info, repopack)
-
-  print("Traceback: " + traceback)
-  print("Error info: " + error_info)
-  print("Context: " + repopack)
-  '''NOW WE NEED TO SPIT THIS BACK INTO THE CLI'''
+  '''NOW WE NEED TO SPIT THIS BACK INTO THE CLI SEQUENTIALLY'''
 
 # [END module.py]
-
-if __name__ == "__main__":
-  main()
