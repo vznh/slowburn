@@ -36,7 +36,6 @@ def process(traceback_message: str, original_error_information: str, context: st
     model="llama3-70b-8192",
     response_format={"type": "json_object"}
   )
-
   return chat_completion.choices[0].message.content
 
 # [END process/process.py]
