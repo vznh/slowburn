@@ -20,6 +20,7 @@ class ErrorCorrectionResponse(Model):
 
 file_writer = Agent(name="file_writer", seed="file_writer_seed", port=8000, endpoint="http://localhost:8000/submit")
 
+
 @file_writer.on_event("startup")
 async def startup(ctx: Context):
     ctx.logger.info(f"Starting up {file_writer.name} agent @ {file_writer.address}")
@@ -44,13 +45,16 @@ async def apply_error_correction(ctx: Context, sender: str, msg: ErrorCorrection
         line_number = response['where']['line_number']
         suggested_code = response['how'][0]['suggested_code_solution']
 
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
 
-        lines[line_number - 1] = suggested_code + '\n'
+        if 0 < line_number <= len(lines):
+            lines[line_number - 1] = suggested_code + '\n'
 
-        with open(file_path, 'w') as file:
-            file.writelines(lines)
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.writelines(lines)
+        else:
+            raise IndexError("Line number out of range")
 
         ctx.logger.info(f"Successfully applied correction to file: {file_path}")
         await ctx.send(sender, FileWriteResponse(success=True, message=f"File {file_path} updated successfully"))
@@ -65,7 +69,9 @@ async def handle_error_correction(ctx: Context, request: ErrorCorrectionRequest)
         await apply_error_correction(ctx, file_writer.address, request)
         return ErrorCorrectionResponse(success=True, message="Error correction applied successfully")
     except Exception as e:
+        print(str(e))
         return ErrorCorrectionResponse(success=False, message=f"Error applying correction: {str(e)}")
+
 
 if __name__ == "__main__":
     print("Starting file writer agent server on http://localhost:8000")

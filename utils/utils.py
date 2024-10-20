@@ -14,6 +14,8 @@ from typing import List, Set, Dict, Optional
 import ast
 import re
 import json
+import subprocess
+import signal
 
 # Example run
 def main(error_info: str, flag: Optional[str] = None, project_root: str = './'):
@@ -404,5 +406,20 @@ def extract_filename_with_extension(command):
     # Return the full file name with its extension
     return match.group(1)
   return None
+
+
+def kill_process_on_port(port):
+    try:
+        # Find the PID of the process using the specified port
+        result = subprocess.run(["lsof", "-t", f"-i:{port}"], capture_output=True, text=True)
+        pid = result.stdout.strip()
+
+        if pid:
+            # Kill the process with the found PID
+            os.kill(int(pid), signal.SIGKILL)
+        else:
+          return
+    except Exception as e:
+        print(f"Error: {e}")
 
 # [END utils.py]
