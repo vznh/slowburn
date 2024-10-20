@@ -72,11 +72,9 @@ This function runs through a source file, and grabs all files linked by any Nth 
 '''
 def get_related_details(file_path: str) -> Set[str]:
     imports = set()
-
     try:
         with open(file_path, 'r') as file:
             tree = ast.parse(file.read(), filename=file_path)
-
         # Walk through the AST and collect import statements
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -85,12 +83,10 @@ def get_related_details(file_path: str) -> Set[str]:
             elif isinstance(node, ast.ImportFrom):
                 if node.module:
                     imports.add(node.module)
-
     except (SyntaxError, IOError) as e:
         # If there's an error, the file is still added but imports are skipped
         print(f"Error parsing file {file_path}: {e}")
         # Optionally, you can log this to a file or simply pass if you don't want to print errors
-
     # Ensure the file is still added (even if it couldn't be parsed)
     return imports
 
@@ -149,8 +145,6 @@ runs repopack
 
 """
 def run_repopack(files):
-
-
     """Run Repopack on specific files and return the packed content."""
     try:
         # Create a temporary directory to store the files
