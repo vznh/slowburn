@@ -1,3 +1,4 @@
+import astor
 from uagents import Agent, Context, Model
 from pathlib import Path
 import ast

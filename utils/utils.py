@@ -90,9 +90,7 @@ def run_mock_repopack(paths: List[str], style: str = 'json') -> str:
   """
   result = []
   for path in paths:
-    print("Query" + path)
     if os.path.exists(path):  # Some paths are hallucinative / not real
-      print("Passed")
       with open(path, 'r') as f:
         content = f.read()
       result.append(f"File: {path}\nContent:\n{content}\n")
@@ -112,7 +110,6 @@ def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -
 
   while planned_visit:
     current = planned_visit.pop(0)
-    print("Current popped and added: " + current)
     possible_files.add(current)
 
     for neighbor in graph.get(current, []):
@@ -120,7 +117,6 @@ def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -
         related_files.add(neighbor)
         planned_visit.append(neighbor)
 
-  print("Possible files: " + "".join(possible_files))
   return possible_files
 
 '''
@@ -152,12 +148,10 @@ def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[
                         elif isinstance(node, ast.ImportFrom) and node.module:
                             imports.add(node.module)
                 except SyntaxError:
-                    print(f"Syntax error in file: {file}")
+                    pass
         except FileNotFoundError:
-            print(f"File not found: {file}")
             return
         except Exception as e:
-            print(f"An unexpected error occurred while reading the file {file}: {str(e)}")
             return
 
         adjacency_list[file] = []
@@ -180,7 +174,8 @@ def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[
                     process_file(module_path)
                     break
             else:
-                print(f"Warning: Imported module {imp} does not exist in the same directory or project root.")
+              pass
+                #print(f"Warning: Imported module {imp} does not exist in the same directory or project root.")
 
         if tree is None and imports:
             adjacency_list[file].append(f"{file} (unresolved imports due to syntax errors)")

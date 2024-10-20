@@ -4,6 +4,11 @@ from prompt_toolkit import print_formatted_text, HTML
 from prompt_toolkit.shortcuts import prompt, PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
+from agents.file_writer_agent import file_writer, ErrorCorrectionRequest, FileWriteResponse
+
+
+# Initialize the file_writer agent
+file_writer_agent = file_writer
 
 
 def terminalstep1(json_object):
@@ -45,6 +50,16 @@ def terminalstep1(json_object):
         """Update the displayed selection."""
         yes_text = format_bold("Yes") if current_index == 0 else format_regular("Yes")
         no_text = format_bold("No") if current_index == 1 else format_regular("No")
+        display_string = (
+            f"\rDo you want to see the solution?: "
+            f"YES/no" if current_index == 0 else
+            f""
+            f"\rDo you want to see the solution and apply changes?: "
+            f"yes/NO" if current_index == 1 else
+            f""
+        )
+        app.output.write(display_string)
+        app.output.flush()
 
         # Clear the line and print the new options with proper formatting
         app.output.write("\r")  # Carries the cursor back to the start of the line
@@ -57,13 +72,3 @@ def terminalstep1(json_object):
 
     if current_index == 0:  # If 'y' was selected
         print_formatted_text(HTML(f"<b><ansigreen>How to fix error:</ansigreen></b> <b>{data['how']['suggested_code_solution']}</b>"))
-if __name__ == "__main__":
-    step1('''{
-   "where": {
-      "line_number": "2",
-      "file_path": "/Users/vinh/Documents/calhacks24/test.py",
-      "type": "SyntaxError"
-   },
-   "what": "The error indicates that there is a syntax error in the code, specifically an unclosed parenthesis.",
-   "how": "The error occurred because the 'print' statement on line 2 of the 'test.py' file is missing a closing parenthesis, which is causing the syntax error."
-}''')
