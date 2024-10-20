@@ -1,5 +1,8 @@
 import os
+import subprocess
+import time
 import click
+import requests
 import errortrace
 from handlers import fastapi_handlers
 from process.process import process
@@ -7,6 +10,8 @@ from utils.utils import detect_framework_or_language, extract_filename_with_exte
 import subprocess
 import requests
 import time
+from terminalout.terminal import terminalstep1
+from utils.utils import detect_framework_or_language, extract_filename_with_extension
 
 @click.command()
 @click.argument('command', required=False)

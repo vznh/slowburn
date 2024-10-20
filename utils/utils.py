@@ -5,16 +5,32 @@ If the user does not provide a flag, the graph will only create itself from the 
 If the user does provide "-g", the graph will contain all files from the repo, with respect to the .gitignore.
 If the user does provide "-r", the graph will contain all files from the error stack, alongside all files that are imported/included in the source file, and recursively call itself until all relationships are exhausted.
 
-@usage: "splat <?-g> <?-r> <entrypoint>"
+@usage: "splat <?-g> <?-r> <?entrypoint>"
+@note: if "splat" is not called with an entrypoint, the user will provide their own entrypoint when prompted
+@note: entrypoint will **always** be provided; assume there are 3 possibilities only
 """
 import os
-from typing import List, Set
+from typing import List, Set, Dict
 import ast
-from networkx import DiGraph
 import subprocess
 import re
 import json
-from typing import List, Set, Union
+
+def main(error_info: str, flag: str | None = None, project_root: str = '.'):
+  error_files = parse_error_stack(error_info)
+
+  if flag == '-g':
+    return run_repopack([project_root])
+
+  if flag == '-r':
+    graph = build_adjacency_list(error_files, project_root)
+    all_related_files = get_nth_related_files(error_files, graph)
+    return run_repopack(list(all_related_files))
+
+  return run_repopack(error_files)
+
+def is_project_file(file_path: str, project_root: str) -> bool:
+  return os.path.commonpath([file_path, project_root]) == project_root
 
 '''
 This function parses through a typical Python error trace stack, and returns a list of all files related.
@@ -22,122 +38,82 @@ This function parses through a typical Python error trace stack, and returns a l
 @note: idx[-1] will always be where error truly originated and or raised
 '''
 def parse_error_stack(error_info: str) -> List[str]:
-  files: List = []
-  for line in error_info.split('\n'):
-    if line.strip().startswith('File "'):
-      file_path = line.split('"')[1]
-      files.append(file_path)
+    files = []
+    # This regex looks for file paths in various formats, including the command output
+    file_pattern = re.compile(r'(?:File "([^"]+)"|\b(\S+\.py)\b)')
 
-  return list(set(files)) # NOTE: We should change this to just { return files } if this doesn't work as intended
+    for line in error_info.split('\n'):
+        matches = file_pattern.findall(line)
+        for match in matches:
+            # The regex returns a tuple for each match, we take the non-empty string
+            file_path = next((m for m in match if m), None)
+            if file_path:
+                file_path = file_path.strip()
+                # Remove any quotes around the file path
+                file_path = file_path.strip("'\"")
+                if os.path.exists(file_path):
+                    files.append(file_path)
+
+    return list(set(files))  # Remove duplicates
 
 '''
-This function is a shorthand redirecting based on if a flag is raised during command call or not.
-@usage: call graph_related_files(pure error string, if flag is raised)
-@returns: None
+This function calls repopack to be used with a required parameter.
 '''
-def graph_related_files(error_info: str, global_flag_raised: bool = False) -> None:
-  if global_flag_raised:
-    return
-  else:
-    return
+def run_repopack(path: List[str], style: str = 'json') -> Dict:
+    """
+    Run repopack on the specified path and return the results.
 
-'''
-This function runs through the entire repository, and dodges all files that do not start with .py.
-@param: repo_path (str) - the path to the repository to analyze (default is current directory)
-@returns: all traced files of type List[str]
-'''
-def get_repo_details(repo_path: str = ".") -> List[str]:
-  traced_files = []
-  gitignore = set()
+    Args:
+        path (str): The path to analyze with repopack.
+        style (str): The output style for repopack (default is 'json').
+        respect_gitignore (bool): Whether to respect .gitignore files (default is True).
 
-  # Read the .gitignore, if it exists
-  if os.path.exists('.gitignore'):
-    with open('.gitgnore', 'r') as f:
-      gitignore = set(line.strip() for line in f if line.strip() and not line.startswith("#"))
+    Returns:
+        Dict: The parsed JSON output from repopack.
+    """
+    cmd = ['repopack'] + path + ['--style', style, '--respect-gitignore']
 
-  for root, _, files in os.walk(repo_path):
-    for file in files:
-      if (file.endswith('py')):
-        full_path = os.path.join(root, file)
-        relative_path = os.path.relpath(full_path, repo_path)
-        if not any(relative_path.startswith(ignore) for ignore in gitignore):
-          traced_files.append(full_path)
-
-  return traced_files
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    return json.loads(result.stdout)
 
 '''
 This function runs through a source file, and grabs all files linked by any Nth degree connection.
 @param: file_path (str) - the path of the source file to analyze
 @returns: all files related to the parameter file to any Nth degree in type Set[str]
 '''
-def get_related_details(file_path: str) -> Set[str]:
-    imports = set()
+def get_nth_related_files(start_files: List[str], graph: Dict[str, List[str]]) -> Set[str]:
+  related_files = set(start_files)
+  planned_visit = list(start_files)
 
-    try:
-        with open(file_path, 'r') as file:
-            tree = ast.parse(file.read(), filename=file_path)
+  while (planned_visit):
+    current = planned_visit.pop(0)
+    for neighbor in graph.get(current, []):
+      if neighbor not in related_files:
+        related_files.add(neighbor)
+        planned_visit.append(neighbor)
 
-        # Walk through the AST and collect import statements
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.add(alias.name)
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.add(node.module)
-
-    except (SyntaxError, IOError) as e:
-        # If there's an error, the file is still added but imports are skipped
-        print(f"Error parsing file {file_path}: {e}")
-        # Optionally, you can log this to a file or simply pass if you don't want to print errors
-
-    # Ensure the file is still added (even if it couldn't be parsed)
-    return imports
+  return related_files
 
 '''
-This helper function resolves an import name to an absolute file path.
-@param: import_name (str) - the name of the import to resolve.
-@param: file_path (str) - the path of the source file from which the import is made.
-@returns: absolute path as type str or None if the import cannot be found
+Builds an adjacency list from a list of files.
 '''
-def resolve_import(import_name: str, file_path: str) -> str | None:
-  dir_path = os.path.dirname(file_path)
-  possible_paths = [
-    os.path.join(dir_path, f"{import_name.replace('.', '/')}.py"),
-    os.path.join(dir_path, import_name, "__init__.py"),
-  ]
+def build_adjacency_list(files: List[str], project_root: str) -> Dict[str, List[str]]:
+    adjacency_list = {}
+    for file in files:
+        if not is_project_file(file, project_root):
+            continue
+        with open(file, 'r') as f:
+            tree = ast.parse(f.read())
+        imports = set()
+        adjacency_list[file] = [
+            os.path.join(project_root, imp.replace('.', os.path.sep) + '.py')
+            for imp in imports
+            if os.path.exists(os.path.join(project_root, imp.replace('.', os.path.sep) + '.py'))
+            and is_project_file(os.path.join(project_root, imp.replace('.', os.path.sep) + '.py'), project_root)
+        ]
+    return adjacency_list
+################################################## NOT IMPLEMENTED BELOW #####################################################################
 
-  for path in possible_paths:
-    if os.path.exists(path):
-      return os.path.abspath(path)
-
-  return None
-
-'''
-Build a dependency graph from a list of files.
-
-This function creates a directed graph of type DiGraph where each node represents a
-file, and directed edges represent import relationships between files.
-
-@param files: A list or set of file paths to analyze for dependencies.
-@returns: A directed graph (DiGraph) representing the dependencies among the files.
-@note: This should only be used if the -r flag is raised.
-'''
-def build_dependency_graph(files: Union[List[str], Set[str]]) -> DiGraph:
-  graph = DiGraph()
-  for file in files:
-    graph.add_node(file)  # No need to check if it already exists
-
-    imports = get_related_details(file)
-    for imp in imports:
-        imp_file = resolve_import(imp, file)
-        # Ensure the import resolves to an actual file and exists in the set of files
-        if imp_file and os.path.exists(imp_file) and imp_file in files:
-            graph.add_edge(file, imp_file)
-
-    return graph
-
-  return graph
 # [END utils.py]
 """
 runs repopack
@@ -145,47 +121,10 @@ runs repopack
 @param takes in a file directory
 
 @returns a json of all of the contents within that function
-
-
 """
-def run_repopack(files):
-
-
-    """Run Repopack on specific files and return the packed content."""
-    try:
-        # Create a temporary directory to store the files
-        temp_dir = 'temp_repopack'
-        os.makedirs(temp_dir, exist_ok=True)
-
-        # Copy the specified files to the temporary directory
-        for file in files:
-            dest_path = os.path.join(temp_dir, os.path.basename(file))
-            with open(file, 'r') as src, open(dest_path, 'w') as dest:
-                dest.write(src.read())
-
-        # Run Repopack on the temporary directory
-        result = subprocess.run(['repopack', temp_dir, '--style', 'json'],
-                                capture_output=True, text=True, check=True)
-
-        # Clean up the temporary directory
-        for file in os.listdir(temp_dir):
-            os.remove(os.path.join(temp_dir, file))
-        os.rmdir(temp_dir)
-
-        # Parse the JSON output
-        packed_content = json.loads(result.stdout)
-
-        return packed_content
-    except subprocess.CalledProcessError as e:
-        print(f"Error running Repopack: {e}")
-        return None
-    except json.JSONDecodeError as e:
-        print(f"Error parsing Repopack output: {e}")
-        return None
 
 # [END utils.py]
 #
-
 '''
 This function uses a command and tries to check what type the file/directory is.
 The idea is that we will have robust solutions specifically for different project types,
@@ -357,7 +296,7 @@ def detect_framework_or_language(command, directory='.'):
     # Check command first
     framework = check_command(command)
     if framework:
-        print('command found', framework)
+        print('command found')
         return framework
 
     # Check for characteristic files
@@ -395,9 +334,6 @@ def detect_framework_or_language(command, directory='.'):
 
     return 'unknown'
 
-'''
-Function to extract the filename
-'''
 def extract_filename_with_extension(command):
     # Regular expression to match file names with extensions for the supported languages
     match = re.search(r'(\b\w+\.(go|rs|kt|scala|swift|r|pl|lua|jl|c|java|ts|py)\b)', command, re.IGNORECASE)
@@ -405,3 +341,30 @@ def extract_filename_with_extension(command):
         # Return the full file name with its extension
         return match.group(1)
     return None
+
+# [END utils.py]
+
+if __name__ == "__main__":
+      # Define the entry point command
+      # splat "python3 test.py"
+      entrypoint = ["python3", "test.py"]
+
+      # Run the entrypoint and capture the error output
+      try:
+          subprocess.run(entrypoint, check=True)
+          print("Ran substance")
+      except subprocess.CalledProcessError as e:
+          # Capture the error output to simulate the error stack
+          error_info = e.stderr if e.stderr else str(e)
+          print("Error information captured from test.py:")
+          print(error_info)
+
+          # Parse the error stack to get a list of files
+          # Use the parse_error_stack to get files mentioned in the error_info
+          error_files = parse_error_stack(error_info)
+          print("************ERROR FILES*************")
+          print(error_files)
+          print("************ERROR FILES*************")
+
+      except Exception as e:
+          print("An unexpected error occurred:", str(e))
