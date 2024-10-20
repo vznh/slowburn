@@ -30,15 +30,15 @@ def squash(ctx, command, related, is_global):
     if not command:
         click.echo("""
             /\\_/\\
-            ( >:< )
-             > - <\
+           ( >:< )
+            > - <\
             Please provide a command or file to analyze.""")
         return
     project_type = detect_framework_or_language(command)
     click.echo("""
         /\\_/\\
-        ( o.o )
-         > ^ <
+       ( o.o )
+        > ^ <
         welcome to splat...
         """)
     click.echo(f"Detected project type: {project_type}")
@@ -49,15 +49,15 @@ def squash(ctx, command, related, is_global):
     elif related:
         click.echo("""
             /\\_/\\
-            ( O.O )
-             > o <\
+           ( O.O )
+            > o <\
             grabbing the current file and all related files""")
     elif is_global:
         click.echo("""
             \
             /\\_/\\
-            ( O.O )
-             > o <\
+           ( O.O )
+            > o <\
             this feature is not implemented yet. exiting now""")
     else:
         error_trace = errortrace.splat_find(command)
@@ -67,7 +67,7 @@ def squash(ctx, command, related, is_global):
         else:
             click.echo("""
                 /\\_/\\
-                ( >:< )
+               ( >:< )
                 > - <\
                 there was an issue running your code""")
 
