@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def process(traceback_message: str, original_error_information: str,context: str,) -> object:
+def process(traceback_message: str, original_error_information: str, context: str) -> object:
   client = Groq(api_key=os.getenv("API"))
 
   chat_completion = client.chat.completions.create(
@@ -26,7 +26,7 @@ def process(traceback_message: str, original_error_information: str,context: str
         Additionally, pinpoint the exact location in the repository (with specified file name and line number) where the error occurred.
         Finally, give suggestions for how to approach resolving the error, including debugging techniques and best practices, preventative measures or coding standards that could be adopted in the future to avoid similar mistakes.
         Ensure that the response is structured, informative, and provides actionable advice for the user.
-        You are to output a JSON structure with interface: { 'where': object, 'what': object, 'how': object }; where: Where are the files did we detect the error to be mostly originate in? Where are their absolute paths? what: In the context of the given code, what was the reasoning behind the error? how: What code segment needs to be replaced, and what is the suggested way to fix it? Provide an object that contains a key value pair, where the key will be the error origination, and the value is the suggested solution."""
+        You are to output a JSON structure with interface: { 'where': object, 'what': object, 'how': list[object] }; where: Where are the files did we detect the error to be mostly originate in? Where are their absolute paths? what: In the context of the given code, what was the reasoning behind the error? how: What code segment needs to be replaced, and what is the suggested way to fix it? Provide an object that contains a key value pair, where the key will be the error origination, and the value is the suggested code solution with no explanation, just code."""
       },
       {
         "role": "user",
