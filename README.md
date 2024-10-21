@@ -1,4 +1,4 @@
-# slowburn
+# 🔥 slowburn
 
 slowburn is based off of splat, our CalHacks 2024 entry. I, and all my teammates were a big fan of what we made, so I wanted to make changes to eventually use it in my own program. You may see some initial contributions from my initial teammates.
 
