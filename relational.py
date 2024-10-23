@@ -1,14 +1,36 @@
+"""
+TODO
+* swap mock repopack func --> actual repopack func
+* deprecate project root var --> actual repo root
+* smarter prompt engineering
+"""
 # [START relational.py]
 import os
 import json
 import subprocess
-from typing import Tuple
-from utils.utils import (
+from typing import Tuple, List, Optional
+from utilities.exception import (
   build_adjacency_list,
   parse_error_stack,
   run_mock_repopack,
   get_nth_related_files
 )
+
+def capture_relational_error_parsing(entrypoint: List[str], flag: str = "", debug: Optional[bool] = False) -> Tuple[str, str, str]:
+  try:
+    subprocess.run(entrypoint, capture_output=True, check=True, text=True)
+    return "", "", "" # If no error occurs, return empty strings
+  except subprocess.CalledProcessError as error:
+    # Capture the error output to simulate error stack
+    traceback: str = error.stderr if error.stderr else str(error)
+    error_information = str(error)
+    collected_traceback_files = parse_error_stack(traceback)
+
+    # Deprecated
+    project_root = os.getcwd()
+
+    return traceback, error_information, (run_mock_repopack(collected_traceback_files) if flag == "-g" or flag == None else run_mock_repopack(collected_traceback_files))
+
 
 def relational_error_parsing_function(entrypoint, flag: str = "") -> Tuple[str, str, str]:
   try:
