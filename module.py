@@ -26,7 +26,6 @@ def main():
   entrypoint: List[str] = ['python3', 'foo.py'] # <-- will be filled in by CLI
   flag: str = "-r"
   traceback, error_info, repopack = relational_error_parsing_function(entrypoint, flag)
-
   # LLM now takes the data (all file context as type str, error message as type str)
   response: object = process(traceback, error_info, repopack)
   '''NOW WE NEED TO SPIT THIS BACK INTO THE CLI SEQUENTIALLY'''
